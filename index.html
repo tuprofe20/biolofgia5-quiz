@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIO LAB — BIODIVERSIDAD</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Rajdhani (Sci-Fi) e Inter (Legibilidad) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tone.js para Sonidos Sintetizados Interactivos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        :root {
+            --neon-blue: #3b82f6;
+            --neon-cyan: #06b6d4;
+            --neon-violet: #8b5cf6;
+            --neon-green: #10b981;
+            --neon-orange: #f97316;
+            --dark-bg: #05070A;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: white;
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; 
+            user-select: none; 
+            perspective: 1000px;
+        }
+
+        h1, h2, h3, .font-sci { font-family: 'Rajdhani', sans-serif; }
+
+        /* Glassmorphism para los paneles */
+        .glass-panel {
+            background: rgba(11, 20, 14, 0.55);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(16, 185, 129, 0.05);
+        }
+
+        /* Opciones con Efecto 3D (Tilt) */
+        .option-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.1s;
+            cursor: pointer;
+            transform-style: preserve-3d;
+        }
+
+        .option-content {
+            transform: translateZ(20px); 
+            transition: all 0.3s;
+        }
+
+        .option-card:hover {
+            border-color: var(--neon-green);
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3), inset 0 0 15px rgba(16, 185, 129, 0.2);
+            background: rgba(15, 30, 25, 0.85);
+            z-index: 10;
+        }
+
+        .option-card.selected-correct {
+            background: rgba(16, 185, 129, 0.25) !important;
+            border-color: #10b981 !important;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.4) !important;
+            transform: scale(1.02) rotateX(0) rotateY(0) !important; 
+        }
+
+        .option-card.selected-incorrect {
+            background: rgba(239, 68, 68, 0.25) !important;
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6), inset 0 0 20px rgba(239, 68, 68, 0.4) !important;
+            transform: scale(0.98) rotateX(0) rotateY(0) !important;
+        }
+
+        .option-card.disabled {
+            pointer-events: none;
+            opacity: 0.3;
+            filter: grayscale(100%);
+            transform: scale(0.95) rotateX(0) rotateY(0) !important;
+            transition: all 0.4s ease;
+        }
+
+        /* Animaciones Neón */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+        }
+
+        .btn-neon {
+            background: transparent;
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: pulse-glow 2s infinite;
+        }
+
+        .btn-neon:hover {
+            background: var(--neon-green);
+            color: var(--dark-bg);
+            box-shadow: 0 0 40px var(--neon-green);
+            transform: scale(1.05) translateY(-2px);
+        }
+
+        /* Efecto Racha (Streak) */
+        @keyframes fire-pulse {
+            0% { text-shadow: 0 0 10px #f97316, 0 0 20px #f97316; transform: scale(1); }
+            50% { text-shadow: 0 0 20px #f97316, 0 0 30px #ef4444; transform: scale(1.1); }
+            100% { text-shadow: 0 0 10px #f97316, 0 0 20px #f97316; transform: scale(1); }
+        }
+        .streak-active { animation: fire-pulse 1s infinite; color: var(--neon-orange); }
+
+        /* Contenedor del Canvas Nativo */
+        #dna-canvas {
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 100vw; height: 100vh; 
+            z-index: -5; 
+            pointer-events: none;
+            background: radial-gradient(circle at center, #0B140E 0%, #030508 100%);
+        }
+
+        /* BIO-Bot */
+        #evo-bot-container {
+            position: fixed; bottom: 20px; right: 20px; z-index: 100;
+            display: flex; flex-direction: column; align-items: flex-end; transition: all 0.5s ease;
+            pointer-events: none; /* Permite hacer clic a través del contenedor transparente */
+        }
+        .robot-hover { animation: float-slow 3s ease-in-out infinite; pointer-events: auto; }
+        @keyframes float-slow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        #speech-bubble {
+            background: rgba(11, 20, 14, 0.95);
+            border: 2px solid var(--neon-green);
+            border-radius: 20px 20px 0 20px;
+            padding: 15px 20px; margin-right: 0; margin-bottom: 15px;
+            max-width: 280px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
+            opacity: 0; transform: scale(0.8) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom right;
+            pointer-events: auto; /* Reactiva los clics en el mensaje si es necesario */
+        }
+        #speech-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
+
+        .robot-eye { animation: blink 4s infinite; transform-origin: center; }
+        @keyframes blink { 0%, 96%, 98% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
+
+        /* Manejo de Pantallas */
+        .screen { display: none; opacity: 0; transition: opacity 0.5s ease-out; }
+        .screen.active { display: flex; opacity: 1; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(60px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .scramble-text { font-family: 'Rajdhani', monospace; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col relative text-gray-100">
+
+    <!-- Fondo Nativo Canvas -->
+    <canvas id="dna-canvas"></canvas>
+
+    <!-- ROBOT BIO-BOT -->
+    <div id="evo-bot-container">
+        <div id="speech-bubble" class="font-sci text-green-100 text-lg tracking-wide">
+            ¡Iniciando sistemas ecológicos!
+        </div>
+        <div class="robot-hover cursor-pointer" onclick="evoBot.poke()">
+            <svg width="100" height="120" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="50" y1="30" x2="50" y2="10" stroke="#10b981" stroke-width="4"/>
+                <circle cx="50" cy="8" r="6" fill="#10b981" class="animate-pulse"/>
+                <rect x="20" y="30" width="60" height="50" rx="15" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
+                <rect x="28" y="40" width="44" height="25" rx="5" fill="#0B0E14" stroke="#06b6d4" stroke-width="2"/>
+                <g id="robot-eyes">
+                    <rect x="35" y="48" width="10" height="8" rx="2" fill="#10b981" class="robot-eye" style="box-shadow: 0 0 10px #10b981;"/>
+                    <rect x="55" y="48" width="10" height="8" rx="2" fill="#10b981" class="robot-eye" style="box-shadow: 0 0 10px #10b981;"/>
+                </g>
+                <path d="M 30 80 L 70 80 L 80 110 L 20 110 Z" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
+                <circle cx="50" cy="95" r="8" fill="#f59e0b" class="animate-pulse"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- PANTALLA INICIAL -->
+    <div id="screen-intro" class="screen active flex-col items-center justify-center w-full h-full p-8 z-10 text-center">
+        <div class="glass-panel p-12 rounded-3xl max-w-4xl w-full flex flex-col items-center relative overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+            
+            <div class="relative w-32 h-32 mb-6 mt-4">
+                <i class="fas fa-globe-americas text-7xl text-green-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-bounce" style="animation-duration: 3s;"></i>
+                <i class="fas fa-leaf text-4xl text-emerald-300 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60 animate-spin-slow" style="margin-left: 20px; margin-top: 15px;"></i>
+            </div>
+            
+            <h2 class="text-2xl text-emerald-300 font-sci tracking-widest mb-2 font-bold uppercase">Instituto de Biología — Ecología y Evolución</h2>
+            <h1 class="text-5xl md:text-7xl font-bold font-sci bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-emerald-400 to-cyan-400 mb-6 drop-shadow-lg tracking-tight">
+                LA BIODIVERSIDAD<br>Y SU IMPORTANCIA
+            </h1>
+            <p class="text-xl text-gray-300 mb-10 tracking-wider font-light max-w-2xl leading-relaxed">
+                Laboratorio de Genética y Ecosistemas.<br> Responde 20 preguntas, obtén <span class="text-green-400 font-bold">+10 puntos</span> por acierto ecológico.
+            </p>
+            
+            <button onclick="startQuiz()" onmouseenter="SoundEngine.playHover()" class="btn-neon font-sci font-bold text-2xl py-4 px-12 rounded-full flex items-center gap-4 group">
+                <span>INICIAR SIMULACIÓN BIOLÓGICA</span>
+                <i class="fas fa-satellite-dish group-hover:rotate-45 transition-transform duration-300"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- PANTALLA DEL CUESTIONARIO -->
+    <div id="screen-quiz" class="screen flex-col w-full h-full z-10 p-4 md:p-8">
+        
+        <!-- Header / Stats -->
+        <header class="glass-panel rounded-2xl p-4 flex flex-wrap justify-between items-center mb-4 gap-4">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-green-900/50 flex items-center justify-center border border-green-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]">
+                    <i class="fas fa-dna text-2xl text-green-400 animate-pulse"></i>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-sci text-3xl font-bold tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-400 leading-none">BIO-LAB</span>
+                    <span id="streak-counter" class="text-sm font-sci text-gray-500 font-bold transition-all duration-300">RACHA: x0</span>
+                </div>
+            </div>
+            
+            <div class="flex flex-wrap gap-3 md:gap-6 font-sci text-xl font-semibold text-gray-300">
+                <div class="flex flex-col items-center bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-600 shadow-inner">
+                    <span class="text-[10px] text-green-400 uppercase tracking-widest mb-1"><i class="fas fa-list-ol mr-1"></i> Análisis</span>
+                    <span id="stat-question" class="text-xl text-white font-bold">1/20</span>
+                </div>
+                <div id="score-container" class="flex flex-col items-center bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-600 shadow-inner transition-colors duration-300">
+                    <span class="text-[10px] text-emerald-400 uppercase tracking-widest mb-1"><i class="fas fa-star mr-1"></i> Puntaje</span>
+                    <span id="stat-score" class="text-xl text-white font-bold">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barra de progreso Global -->
+        <div class="w-full bg-slate-800/80 rounded-full h-2 mb-4 border border-slate-600 overflow-hidden relative shadow-inner">
+            <div id="progress-bar" class="h-full bg-gradient-to-r from-green-500 via-emerald-500 to-cyan-500 transition-all duration-700 ease-out" style="width: 5%"></div>
+        </div>
+
+        <!-- Barra de Tiempo (Presión Dinámica) -->
+        <div class="w-full bg-slate-900 rounded-full h-1.5 mb-6 overflow-hidden shadow-inner shrink-0">
+            <div id="timer-bar" class="h-full bg-green-400 w-full shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+        </div>
+
+        <!-- Contenedor Principal (Pregunta y Opciones) -->
+        <main class="flex-1 flex flex-col max-w-6xl mx-auto w-full gap-6 relative z-10 pb-40 overflow-y-auto no-scrollbar"> 
+            
+            <!-- Pregunta -->
+            <div class="glass-panel p-8 md:p-10 rounded-2xl border-l-4 border-l-green-400 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] shrink-0">
+                <div id="topic-badge" class="absolute -top-4 left-8 bg-slate-900 border border-green-500 text-green-400 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest font-sci shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-2">
+                    <i class="fas fa-microscope"></i> <span id="topic-text">Tema</span>
+                </div>
+                <!-- Text Scramble Container -->
+                <h2 id="question-text" class="text-2xl md:text-3xl font-semibold leading-relaxed mt-3 text-white font-inter scramble-text min-h-[80px]">
+                    Iniciando escaneo genético y ambiental...
+                </h2>
+            </div>
+
+            <!-- Opciones -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
+                <!-- Generado por JS -->
+            </div>
+
+        </main>
+    </div>
+
+    <!-- PANTALLA FINAL (RESULTADOS) -->
+    <div id="screen-results" class="screen flex-col items-center justify-center w-full h-full p-4 md:p-8 z-10">
+        <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-5xl w-full flex flex-col items-center text-center overflow-y-auto no-scrollbar max-h-full relative">
+            
+            <div class="absolute inset-0 overflow-hidden rounded-3xl z-[-1] opacity-20 bg-gradient-to-b from-green-600 to-cyan-900 mix-blend-overlay"></div>
+
+            <div class="relative w-32 h-32 mb-4 flex items-center justify-center">
+                <div class="absolute inset-0 border-4 border-dashed border-green-400 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                <i class="fas fa-award text-6xl text-green-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]"></i>
+            </div>
+            
+            <h1 class="text-5xl font-bold font-sci text-white mb-2 tracking-wider drop-shadow-md">ANÁLISIS DE LA BIÓSFERA COMPLETADO</h1>
+            
+            <div id="final-rank" class="text-3xl font-sci text-green-400 mb-8 font-bold bg-slate-900/80 px-8 py-2 rounded-full border border-green-500/50">
+                Calculando rango ecológico...
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
+                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-star"></i></div>
+                    <span class="text-green-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Puntaje Final</span>
+                    <span id="final-score" class="text-5xl font-bold text-white z-10">0<span class="text-xl text-gray-500">/200</span></span>
+                </div>
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
+                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-check-double"></i></div>
+                    <span class="text-emerald-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Aciertos</span>
+                    <span id="final-hits" class="text-5xl font-bold text-white z-10">0<span class="text-xl text-gray-500">/20</span></span>
+                </div>
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
+                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-fire"></i></div>
+                    <span class="text-orange-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Mejor Racha</span>
+                    <span id="final-streak" class="text-5xl font-bold text-white z-10">x0</span>
+                </div>
+            </div>
+
+            <button onclick="location.reload()" onmouseenter="SoundEngine.playHover()" class="mt-4 btn-neon font-sci font-bold text-xl py-4 px-12 rounded-full flex items-center gap-3 group">
+                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i> REINICIAR SISTEMA
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL DE RETROALIMENTACIÓN -->
+    <div id="feedback-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] hidden flex-col items-center justify-center p-4">
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div id="modal-glow" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/20 rounded-full filter blur-[120px] transition-colors duration-500"></div>
+        </div>
+
+        <div id="feedback-panel" class="glass-panel p-8 md:p-10 rounded-2xl max-w-3xl w-full border-t-4 flex flex-col transition-all transform translate-y-12 opacity-0 duration-500 shadow-[0_30px_60px_rgba(0,0,0,0.9)] relative z-10">
+            
+            <div class="flex items-start gap-5 mb-6 border-b border-slate-700/50 pb-5">
+                <div id="feedback-icon" class="text-5xl shrink-0 mt-1"></div>
+                <div class="flex-1">
+                    <p id="feedback-points" class="text-green-400 text-sm mb-1 uppercase tracking-widest font-sci font-bold"></p>
+                    <h3 id="feedback-title" class="text-3xl font-sci font-bold uppercase tracking-wide"></h3>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <div class="bg-slate-900/60 p-4 rounded-xl border-l-4 border-slate-500 mb-5 font-inter">
+                    <p class="text-xs text-gray-400 uppercase tracking-wider font-sci mb-1">Tu selección:</p>
+                    <p id="feedback-selected" class="text-md text-white font-medium italic"></p>
+                </div>
+                
+                <div class="relative pl-4 border-l-2 border-slate-600/50">
+                    <p id="feedback-explanation" class="text-lg md:text-xl leading-relaxed text-gray-300 font-inter font-light">
+                        Explicación detallada...
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="nextQuestion()" onmouseenter="SoundEngine.playHover()" id="btn-continue" class="self-end bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-sci font-bold text-xl py-3 px-8 rounded-full transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:shadow-[0_0_25px_rgba(16,185,129,0.8)] hover:scale-105 flex items-center gap-2 group">
+            CONTINUAR <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+    function initNativeBackground() {
+        const canvas = document.getElementById('dna-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        let time = 0;
+        // Bases del ADN representativas de la Biodiversidad
+        const elements = ['A', 'C', 'T', 'G'];
+        const floatingParticles = Array.from({length: 45}).map(() => ({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            speed: 0.2 + Math.random() * 0.4,
+            char: elements[Math.floor(Math.random() * elements.length)],
+            size: 16 + Math.random() * 20,
+            opacity: 0.05 + Math.random() * 0.15
+        }));
+
+        function drawConnections(xOffset, h, amplitude, freq, speed, opacityScale, color1, color2) {
+            ctx.lineWidth = 1;
+            const yStep = 35;
+            for(let y = -50; y < h + 50; y += yStep) {
+                const phase = y * freq + time * speed;
+                const z1 = Math.cos(phase);
+                const z2 = Math.cos(phase + Math.PI);
+                
+                const x1 = xOffset + Math.sin(phase) * amplitude;
+                const x2 = xOffset + Math.sin(phase + Math.PI) * amplitude;
+                
+                const r1 = 3 + (z1 + 1) * 2;
+                const r2 = 3 + (z2 + 1) * 2;
+                
+                const op1 = opacityScale * (0.4 + (z1 + 1) * 0.3);
+                const op2 = opacityScale * (0.4 + (z2 + 1) * 0.3);
+
+                ctx.beginPath();
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x2, y);
+                ctx.strokeStyle = `rgba(16, 185, 129, ${opacityScale * 0.2 * Math.abs(Math.sin(phase))})`;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(x1, y, r1, 0, Math.PI * 2);
+                ctx.fillStyle = color1;
+                ctx.globalAlpha = op1;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color1;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(x2, y, r2, 0, Math.PI * 2);
+                ctx.fillStyle = color2;
+                ctx.globalAlpha = op2;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = color2;
+                ctx.fill();
+                
+                ctx.globalAlpha = 1; 
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            floatingParticles.forEach(p => {
+                ctx.fillStyle = `rgba(16, 185, 129, ${p.opacity})`;
+                ctx.font = `bold ${p.size}px 'Rajdhani', sans-serif`;
+                ctx.fillText(p.char, p.x, p.y);
+                p.y -= p.speed;
+                if(p.y < -50) p.y = height + 50;
+            });
+
+            drawConnections(width * 0.15, height, 50, 0.015, 0.01, 0.4, '#10b981', '#34d399');
+            drawConnections(width * 0.85, height, 60, 0.012, 0.015, 0.3, '#34d399', '#059669');
+            drawConnections(width * 0.5, height, 150, 0.008, 0.008, 0.7, '#10b981', '#06b6d4');
+
+            time += 1;
+            requestAnimationFrame(animate);
+        }
+        animate();
+    }
+    initNativeBackground();
+
+    const SoundEngine = {
+        synth: null,       
+        hoverSynth: null,  
+        clickSynth: null,  
+        tickSynth: null,   
+        
+        init: async function() {
+            await Tone.start();
+            
+            this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
+            this.synth.volume.value = -12; 
+            
+            this.hoverSynth = new Tone.Synth({
+                oscillator: { type: "sine" },
+                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+            }).toDestination();
+            this.hoverSynth.volume.value = -20;
+            
+            this.clickSynth = new Tone.MembraneSynth().toDestination();
+            this.clickSynth.volume.value = -15;
+
+            this.tickSynth = new Tone.MetalSynth({
+                frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
+                harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
+            }).toDestination();
+            this.tickSynth.volume.value = -25;
+        },
+        playHover: function() {
+            if(this.hoverSynth && Tone.context.state === 'running') {
+                this.hoverSynth.triggerAttackRelease("C6", "32n");
+            }
+        },
+        playClick: function() {
+            if(this.clickSynth && Tone.context.state === 'running') {
+                this.clickSynth.triggerAttackRelease("C3", "16n");
+            }
+        },
+        playTick: function() {
+            if(this.tickSynth && Tone.context.state === 'running') {
+                this.tickSynth.triggerAttackRelease("32n");
+            }
+        },
+        playCorrect: function() {
+            if(!this.synth) return;
+            const now = Tone.now();
+            this.synth.triggerAttackRelease("C5", "16n", now);
+            this.synth.triggerAttackRelease("E5", "16n", now + 0.1);
+            this.synth.triggerAttackRelease("G5", "8n", now + 0.2);
+        },
+        playIncorrect: function() {
+            if(!this.synth) return;
+            const now = Tone.now();
+            this.synth.triggerAttackRelease("D4", "8n", now);
+            this.synth.triggerAttackRelease("A3", "4n", now + 0.15);
+        },
+        playCombo: function() {
+            if(!this.synth) return;
+            const now = Tone.now();
+            this.synth.triggerAttackRelease("C5", "16n", now);
+            this.synth.triggerAttackRelease("G5", "16n", now + 0.1);
+            this.synth.triggerAttackRelease("C6", "8n", now + 0.2);
+            this.synth.triggerAttackRelease("E6", "4n", now + 0.3);
+        }
+    };
+
+    function fireConfetti(isCombo = false) {
+        var duration = isCombo ? 4000 : 2000;
+        var end = Date.now() + duration;
+        var colors = isCombo ? ['#f97316', '#eab308', '#ef4444'] : ['#10b981', '#34d399', '#06b6d4'];
+
+        (function frame() {
+            confetti({ particleCount: isCombo? 5 : 3, angle: 60, spread: 55, origin: { x: 0 }, colors: colors, zIndex: 1000 });
+            confetti({ particleCount: isCombo? 5 : 3, angle: 120, spread: 55, origin: { x: 1 }, colors: colors, zIndex: 1000 });
+            if (Date.now() < end) requestAnimationFrame(frame);
+        }());
+    }
+
+    function scrambleText(element, finalString, duration = 800) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
+        let start = Date.now();
+        element.classList.add('text-green-400');
+        
+        let interval = setInterval(() => {
+            let elapsed = Date.now() - start;
+            if (elapsed > duration) {
+                clearInterval(interval);
+                element.innerHTML = finalString;
+                element.classList.remove('text-green-400');
+                return;
+            }
+            element.innerHTML = finalString.split('').map(char => {
+                if (char === ' ' || char === '?' || char === '¿' || char === ',') return char;
+                return Math.random() > (elapsed / duration) ? chars[Math.floor(Math.random() * chars.length)] : char;
+            }).join('');
+        }, 30);
+    }
+
+    const evoBot = {
+        element: document.getElementById('speech-bubble'),
+        eyes: document.getElementById('robot-eyes'),
+        say: function(text, type = 'normal', duration = 5000) {
+            this.element.innerHTML = text;
+            this.element.classList.add('active');
+            
+            const colors = { 'correct': '#10b981', 'error': '#ef4444', 'combo': '#f97316', 'normal': '#10b981' };
+            const color = colors[type];
+            
+            this.element.style.borderColor = color;
+            this.element.style.boxShadow = `0 0 20px ${color}66`;
+            this.eyes.querySelectorAll('.robot-eye').forEach(eye => {
+                eye.setAttribute('fill', color);
+                eye.style.boxShadow = `0 0 10px ${color}`;
+            });
+
+            if(this.hideTimeout) clearTimeout(this.hideTimeout);
+            if(duration > 0) {
+                this.hideTimeout = setTimeout(() => {
+                    this.element.classList.remove('active');
+                    this.eyes.querySelectorAll('.robot-eye').forEach(eye => eye.setAttribute('fill', '#10b981'));
+                }, duration);
+            }
+        },
+        poke: function() {
+            const phrases = [
+                "¿Sabías que un ecosistema diverso tiene mucha mayor resistencia ante los desastres naturales?",
+                "Analizando redes tróficas... Eres un espécimen fascinante.",
+                "La adaptación es la clave. Mantén tu atención alta para evolucionar en el juego."
+            ];
+            this.say(`<i class="fas fa-info-circle mr-2"></i> ${phrases[Math.floor(Math.random() * phrases.length)]}`, 'normal', 4000);
+            SoundEngine.playHover();
+        }
+    };
+
+    const questionsDB = [
+        { topic: "Origen de la Vida", level: "Básico", question: "¿Qué factor principal ha permitido la enorme riqueza biológica y diversidad de formas de vida en la Tierra?", options: [ { text: "A) Los diferentes factores ambientales a los que las especies se han adaptado.", isCorrect: true, feedback: "Correcto. La adaptación continua a los distintos ambientes del planeta es la base de la inmensa diversidad biológica." }, { text: "B) La intervención exclusiva y continua de la selección artificial humana.", isCorrect: false, feedback: "La selección artificial es reciente y exclusiva de los humanos, no el origen de toda la vida." }, { text: "C) La ausencia de cambios climáticos durante millones de años en el planeta.", isCorrect: false, feedback: "Al contrario, los cambios ambientales han impulsado la evolución y adaptación de las especies." }, { text: "D) La uniformidad estricta de los ecosistemas en todos los continentes del mundo.", isCorrect: false, feedback: "El planeta se caracteriza por tener ambientes muy variados y dinámicos, no uniformes." } ] },
+        
+        { topic: "Intervención Humana", level: "Intermedio", question: "¿A qué proceso se refiere el aprovechamiento humano de la variabilidad genética para domesticar especies?", options: [ { text: "A) Evolución natural del ecosistema", isCorrect: false, feedback: "La evolución natural ocurre de manera espontánea sin la intervención dirigida por el ser humano." }, { text: "B) Selección artificial de especies", isCorrect: true, feedback: "Exacto. Los humanos hemos aprovechado la variabilidad genética seleccionando rasgos deseables en plantas y animales." }, { text: "C) Mutación espontánea del ADN", isCorrect: false, feedback: "Las mutaciones son cambios aleatorios a nivel genético, no el proceso organizado de domesticación." }, { text: "D) Adaptación pasiva al medio ambiente", isCorrect: false, feedback: "La adaptación pasiva es natural de los seres vivos, no un aprovechamiento activo por parte del hombre." } ] },
+        
+        { topic: "Concepto Principal", level: "Básico", question: "¿Qué concepto engloba toda la diversidad de formas de vida en la Tierra, incluyendo genes, especies y ecosistemas?", options: [ { text: "A) Bioma terrestre", isCorrect: false, feedback: "Un bioma es un área biogeográfica específica, no engloba toda la diversidad a nivel global en todos sus niveles." }, { text: "B) Biósfera del planeta", isCorrect: false, feedback: "La biósfera es la capa del planeta donde hay vida, pero el concepto organizativo que buscamos es otro." }, { text: "C) Biodiversidad o diversidad biológica", isCorrect: true, feedback: "La biodiversidad engloba absolutamente toda la variedad de formas de vida procedentes de cualquier fuente." }, { text: "D) Ecología ambiental", isCorrect: false, feedback: "La ecología es la ciencia biológica que estudia las interacciones, no la diversidad en sí misma." } ] },
+        
+        { topic: "Organización", level: "Básico", question: "¿Cuáles son los tres niveles principales en los que suele considerarse la biodiversidad?", options: [ { text: "A) Celular, individual y poblacional.", isCorrect: false, feedback: "Estos corresponden a niveles de organización biológica anatómica, pero no a los tres pilares de la biodiversidad." }, { text: "B) Especies, genética y ecosistemas.", isCorrect: true, feedback: "El video explica que estos tres niveles abarcan de manera integral desde los genes individuales hasta los hábitats completos." }, { text: "C) Terrestre, acuático y atmosférico.", isCorrect: false, feedback: "Esos representan tipos de hábitats físicos o medios, no los niveles de clasificación de la biodiversidad." }, { text: "D) Microorganismos, plantas y animales.", isCorrect: false, feedback: "Estos son reinos o grupos taxonómicos, los cuales se encuentran englobados únicamente dentro del nivel de 'especies'." } ] },
+        
+        { topic: "Nivel 1: Especies", level: "Intermedio", question: "¿A qué se refiere el nivel de biodiversidad 'de especies'?", options: [ { text: "A) A las diferencias en las secuencias de ADN dentro de una misma población.", isCorrect: false, feedback: "Ese concepto pertenece estrictamente al nivel de la biodiversidad genética intrapoblacional." }, { text: "B) A la inmensa variedad de ecosistemas presentes en un país o región determinada.", isCorrect: false, feedback: "Eso describe claramente a la biodiversidad del tercer nivel (ecosistemas)." }, { text: "C) A la gama de tipos de seres vivos existentes, desde bacterias hasta plantas y hongos.", isCorrect: true, feedback: "Incluye la inmensa variedad de organismos, producto de diferencias morfológicas, fisiológicas y genéticas." }, { text: "D) A la capacidad exclusiva de los seres humanos para domesticar nuevos tipos de cultivos.", isCorrect: false, feedback: "Ese es un ejemplo de la acción humana mediante selección artificial, no la definición del nivel biológico de especies." } ] },
+        
+        { topic: "Biología Moderna", level: "Avanzado", question: "Según el video, ¿qué herramienta de la biología moderna nos permite diferenciar organismos aparentemente similares?", options: [ { text: "A) El estudio profundo de sus secuencias de ADN.", isCorrect: true, feedback: "Gracias a la genética moderna (secuencias de ADN), hoy diferenciamos organismos (como bacterias) que a simple vista parecen idénticos." }, { text: "B) La observación continua de su comportamiento en cautiverio.", isCorrect: false, feedback: "El comportamiento no siempre refleja las diferencias genéticas profundas, especialmente en organismos microscópicos." }, { text: "C) El análisis comparativo de sus fósiles en capas geológicas.", isCorrect: false, feedback: "La paleontología ayuda a entender el pasado, pero el video destaca directamente a la biología molecular y genética." }, { text: "D) La medición rigurosa de su tamaño corporal y peso promedio.", isCorrect: false, feedback: "El tamaño es altamente variable (fenotipo) y no es el método definitivo para diferenciar cepas crípticas." } ] },
+        
+        { topic: "Nivel 2: Genética", level: "Avanzado", question: "¿Qué ventaja principal otorga la 'biodiversidad genética' a los individuos de una misma especie?", options: [ { text: "A) Les permite formar biomas y ecosistemas completamente nuevos sin intervención de terceros.", isCorrect: false, feedback: "Un ecosistema está formado por múltiples especies interconectadas, no por las variaciones genéticas de una sola." }, { text: "B) Les permite adaptarse a los cambios ambientales, variaciones de radiación o nuevas enfermedades.", isCorrect: true, feedback: "La variabilidad genética es la póliza de seguro de una especie para poder sobrevivir y adaptarse a nuevas presiones o amenazas." }, { text: "C) Garantiza biológicamente que todos los individuos de la especie sean exactamente idénticos.", isCorrect: false, feedback: "Al contrario, su propósito evolutivo es asegurar que los individuos tengan características, propiedades y resistencias diferentes." }, { text: "D) Evita por completo y de manera natural que la especie sufra cualquier tipo de extinción o depredación.", isCorrect: false, feedback: "Ninguna característica biológica evita la depredación al 100%, pero sí brinda herramientas evolutivas para la supervivencia a largo plazo." } ] },
+        
+        { topic: "Nivel 3: Ecosistemas", level: "Intermedio", question: "¿Cómo se define el nivel de biodiversidad de 'ecosistemas'?", options: [ { text: "A) Como el conjunto de características físicas y fisiológicas de una sola especie vegetal o animal.", isCorrect: false, feedback: "Eso se relaciona más con la diversidad genética y las propiedades de las especies individuales." }, { text: "B) Como el conjunto de individuos de diferentes especies que viven en una zona e interactúan entre sí.", isCorrect: true, feedback: "Involucra a múltiples formas de vida (comunidad biológica) conviviendo y sus intercambios naturales con el medio físico." }, { text: "C) Como el número total de genes presentes exclusivamente dentro de las selvas y bosques tropicales húmedos.", isCorrect: false, feedback: "La biodiversidad de ecosistemas se encuentra en cualquier bioma (desiertos, océanos, tundras), no solo en los bosques." }, { text: "D) Como la inmensa cantidad de animales que han sido domesticados por el hombre a lo largo de la historia.", isCorrect: false, feedback: "La suma de la domesticación representa una porción diminuta comparada con el funcionamiento de un ecosistema salvaje completo." } ] },
+        
+        { topic: "Geografía", level: "Intermedio", question: "¿Cuántos países en todo el mundo han sido clasificados formalmente como 'megadiversos'?", options: [ { text: "A) Únicamente 10 países en total", isCorrect: false, feedback: "Es un número un poco más elevado que engloba naciones de varios continentes." }, { text: "B) Exactamente 17 países clasificados", isCorrect: true, feedback: "Efectivamente, son 17 los países selectos que albergan la inmensa mayoría de la biodiversidad global en sus territorios." }, { text: "C) Alrededor de 25 países", isCorrect: false, feedback: "El grupo de países megadiversos es más restringido y específico que eso." }, { text: "D) Un aproximado de 50 países", isCorrect: false, feedback: "Esta cantidad representaría a casi un cuarto del planeta, lo cual diluye el concepto de megadiversidad concentrada." } ] },
+        
+        { topic: "Megadiversidad", level: "Básico", question: "¿Qué porcentaje aproximado de la diversidad biológica mundial poseen los países megadiversos?", options: [ { text: "A) Cerca del 50% de la diversidad global", isCorrect: false, feedback: "Estos países poseen una cifra de concentración biológica aún más impresionante." }, { text: "B) Cerca del 70% de la diversidad mundial", isCorrect: true, feedback: "A pesar de ser únicamente 17 naciones, concentran alrededor del 70% de la riqueza natural y especies del globo." }, { text: "C) Aproximadamente el 90% de las especies", isCorrect: false, feedback: "Es un porcentaje excesivamente alto, puesto que el resto del mundo también posee ecosistemas y especies únicas." }, { text: "D) La totalidad absoluta, es decir el 100%", isCorrect: false, feedback: "La vida y la biodiversidad están repartidas por todo el globo, ningún grupo de países tiene la totalidad absoluta de las especies." } ] },
+        
+        { topic: "Características", level: "Intermedio", question: "¿Cuál de las siguientes NO es una característica típica de los países considerados megadiversos?", options: [ { text: "A) Su ubicación geográfica cercana a las regiones tropicales del planeta.", isCorrect: false, feedback: "Estar en latitudes tropicales sí es una característica muy común de estos países por el clima favorable." }, { text: "B) La presencia de un territorio soberano de gran tamaño geográfico.", isCorrect: false, feedback: "Tener un gran tamaño territorial sí suele ser un factor que les permite albergar más hábitats y nichos." }, { text: "C) Estar conformados por paisajes exclusivamente áridos y desérticos.", isCorrect: true, feedback: "Al contrario de esto, se caracterizan fuertemente por poseer una enorme diversidad de paisajes (selvas, bosques, montañas, etc.)." }, { text: "D) Poseer una alta diversidad de paisajes como selvas húmedas, montañas y costas.", isCorrect: false, feedback: "Esta es una característica primordial que permite la existencia de innumerables ecosistemas en los países megadiversos." } ] },
+        
+        { topic: "Importancia Vital", level: "Intermedio", question: "¿Por qué es fundamental la conservación de la biodiversidad para el planeta Tierra?", options: [ { text: "A) Porque garantiza biológicamente el equilibrio de todos los ecosistemas del mundo.", isCorrect: true, feedback: "La vasta diversidad de especies es directamente responsable del funcionamiento correcto de las interacciones naturales esenciales para la vida." }, { text: "B) Porque permite a los seres humanos controlar meteorológicamente el clima de todas las regiones.", isCorrect: false, feedback: "El clima del planeta depende de múltiples factores astronómicos y geológicos, no es algo 'controlable' artificialmente por la biodiversidad." }, { text: "C) Porque asegura permanentemente que ninguna especie biológica volverá a extinguirse jamás.", isCorrect: false, feedback: "La extinción es un proceso natural y evolutivo que continuará, aunque la acción humana hoy la haya acelerado peligrosamente." }, { text: "D) Porque detiene de forma definitiva el proceso natural de la evolución biológica.", isCorrect: false, feedback: "Es justamente todo lo contrario, la biodiversidad constante es el motor principal y el resultado histórico de la evolución biológica." } ] },
+        
+        { topic: "Riesgos", level: "Básico", question: "Irónicamente, según el documental, ¿cuál es la principal amenaza actual para la biodiversidad del planeta?", options: [ { text: "A) La caída inesperada de meteoritos celestes", isCorrect: false, feedback: "Este tipo de eventos ocurrió en el pasado geológico profundo, pero no es de ninguna manera la amenaza diaria actual." }, { text: "B) Las fuertes erupciones volcánicas continuas", isCorrect: false, feedback: "Son fenómenos naturales cuyos impactos suelen ser muy locales o temporales, de los cuales la naturaleza se recupera." }, { text: "C) La agresiva acción humana sobre el medio", isCorrect: true, feedback: "A través de procesos masivos como la deforestación, cambios de ecosistemas e incendios, la humanidad se ha convertido en la principal amenaza." }, { text: "D) Las glaciaciones naturales y prolongadas", isCorrect: false, feedback: "No nos encontramos actualmente inmersos en un evento prolongado de glaciación natural que esté extinguiendo la vida masivamente." } ] },
+        
+        { topic: "Redes Ecológicas", level: "Avanzado", question: "¿Qué ocurre ecológica y sistémicamente cuando una especie se extingue del medio?", options: [ { text: "A) Absolutamente nada, el ecosistema mantiene su forma y funciones exactamente iguales.", isCorrect: false, feedback: "Las especies se encuentran profundamente interconectadas, por lo que su ausencia y desaparición siempre tiene un impacto real." }, { text: "B) Otra especie idéntica aparece casi inmediatamente por procesos de mutación espontánea.", isCorrect: false, feedback: "La evolución biológica toma millones de años en actuar, las especies no se reemplazan unas a otras instantáneamente." }, { text: "C) Deja un peligroso hueco en la red de funcionamiento que termina afectando a todas las demás.", isCorrect: true, feedback: "Su ausencia daña severamente la red de relaciones; afecta a unas especies más directamente que a otras, pero a fin de cuentas afecta a todas." }, { text: "D) Los niveles globales de oxígeno del planeta disminuyen de manera drástica y catastrófica.", isCorrect: false, feedback: "Eso dependería específicamente del tipo de especie (ej: fitoplancton), pero no es el efecto general en todas las extinciones registradas." } ] },
+        
+        { topic: "Dinámica Evolutiva", level: "Avanzado", question: "¿Cómo describe exactamente el video a la naturaleza de la biodiversidad a través de las eras y el tiempo?", options: [ { text: "A) Como un sistema biológico estático e inalterable desde los inicios de la creación del planeta.", isCorrect: false, feedback: "La historia demuestra que la vida en el planeta nunca ha sido estática, cambia y se transforma constantemente ante las presiones." }, { text: "B) Como un sistema vivo sumamente dinámico y que se encuentra en evolución biológica constante.", isCorrect: true, feedback: "Es un proceso completamente dinámico y vivo, es el maravilloso fruto de millones de años de cambios morfológicos y adaptaciones en cada organismo." }, { text: "C) Como una estructura que solo logra cambiar cuando el ser humano interviene genéticamente en ella.", isCorrect: false, feedback: "La naturaleza y las especies evolucionaban de manera exitosa muchísimo tiempo antes de que siquiera existiera el ser humano." }, { text: "D) Como un proceso matemático que evoluciona de manera exacta y predecible cada millón de años.", isCorrect: false, feedback: "La evolución biológica no sigue un cronómetro exacto ni predecible, depende fuertemente de las presiones ambientales y mutaciones al azar." } ] },
+        
+        { topic: "Beneficios Humanos", level: "Básico", question: "Además de proveer alimento vital y oxígeno, ¿qué otro bien directo e importante nos brinda la biodiversidad de las especies?", options: [ { text: "A) La radiación solar necesaria para calentar nuestra atmósfera.", isCorrect: false, feedback: "El sol es el astro que provee la radiación necesaria, no es un bien otorgado por la biodiversidad terrestre." }, { text: "B) La poderosa gravedad que ayuda a mantener los océanos en su lugar.", isCorrect: false, feedback: "La fuerza de gravedad es un fenómeno enteramente físico del planeta, completamente independiente de los seres vivos que lo habitan." }, { text: "C) Innumerables materias primas y el origen orgánico de algunos medicamentos.", isCorrect: true, feedback: "Gran parte de la medicina actual proviene directamente de aislar compuestos químicos hallados en el interior de diversas plantas y microorganismos." }, { text: "D) La rápida formación de nuevas rocas sólidas dentro de la corteza terrestre.", isCorrect: false, feedback: "Esto corresponde primariamente a procesos geológicos lentos, no está relacionado directamente a las especies (salvo casos aislados como las rocas calcáreas)." } ] },
+        
+        { topic: "Pérdida de Vida", level: "Intermedio", question: "¿Cuál es la causa principal y más destructiva responsable de la pérdida de biodiversidad mencionada hacia el final del video?", options: [ { text: "A) La intensa caza furtiva y comercialización de exóticos animales silvestres.", isCorrect: false, feedback: "Es sin duda una amenaza grave para ciertas especies, pero la alteración directa de su hogar físico (el hábitat) tiene un impacto destructivo mucho mayor." }, { text: "B) La contaminación lumínica y acústica extrema generada en las grandes ciudades.", isCorrect: false, feedback: "Afecta los patrones de comportamiento de ciertas especies locales urbanas, pero no es considerada la causa principal de muerte biológica a nivel global." }, { text: "C) La constante pérdida y el deterioro masivo de los hábitats al transformar ecosistemas.", isCorrect: true, feedback: "Al transformar fuertemente los ecosistemas vírgenes (deforestación agresiva, urbanización descontrolada), destruimos la base esencial de la vida silvestre." }, { text: "D) El aumento térmico exclusivo y localizado de la temperatura en el polo ártico norte.", isCorrect: false, feedback: "El cambio climático indudablemente afecta todo, pero la destrucción física y directa del hábitat encabeza de lejos la lista de las causas inmediatas de muerte." } ] },
+        
+        { topic: "Acción Humana", level: "Avanzado", question: "¿Qué característica de supervivencia tan singular distingue marcadamente al ser humano frente a los demás animales respecto a su entorno?", options: [ { text: "A) Es biológicamente el único animal con la capacidad de adaptarse pasivamente a cualquier tipo de clima.", isCorrect: false, feedback: "De hecho, usamos ropa de abrigo, fuego y tecnología moderna precisamente porque nuestros cuerpos no se adaptan pasivamente a climas extremos." }, { text: "B) Es el único que adapta el entorno drásticamente a él, en lugar de adaptarse él al duro entorno natural.", isCorrect: true, feedback: "Transformamos ecosistemas enteros para nuestra propia comodidad humana en vez de adaptarnos a convivir con ellos en su estado natural." }, { text: "C) Es la única especie superior que no depende en lo absoluto del correcto funcionamiento de la naturaleza.", isCorrect: false, feedback: "El video enfatiza repetidamente que somos una especie frágil y dependemos profundamente de ella para conseguir alimento, medicinas, agua y aire." }, { text: "D) Es el único ser vivo comprobado científicamente que carece de variabilidad genética en su código de ADN.", isCorrect: false, feedback: "Todos los seres humanos tenemos ADN diferente gracias al entrecruzamiento de genes; por ende, somos genéticamente diversos dentro de la especie." } ] },
+        
+        { topic: "Reflexión", level: "Intermedio", question: "Según expone el autor del video, si pretendemos administrar correctamente el planeta Tierra, ¿qué es imperativo comprender sobre nuestras acciones diarias?", options: [ { text: "A) Que la avanzada tecnología humana siempre será capaz de limpiar cualquier contaminación producida.", isCorrect: false, feedback: "La realidad es que la tecnología moderna no posee la capacidad de revivir ecosistemas completos o traer de vuelta a especies ya extintas." }, { text: "B) Que estas acciones solo afectan negativamente y de manera aislada a los países del tercer mundo.", isCorrect: false, feedback: "La agresiva pérdida de biodiversidad altera los ciclos climáticos y las redes ecológicas a nivel global, afectando tanto a países ricos como pobres." }, { text: "C) Que sus devastadoras consecuencias van mucho más allá y nos superan a nosotros mismos como especie.", isCorrect: true, feedback: "Debemos ser capaces de ver más allá de la avaricia inmediata y entender profundamente el daño sistémico global que generamos a todas las especies." }, { text: "D) Que la madre naturaleza está incondicionalmente obligada a proveernos biológicamente de recursos infinitos.", isCorrect: false, feedback: "Los recursos brindados por la biosfera son finitos, limitados y pueden agotarse irremediablemente si el ecosistema sufre un colapso total." } ] },
+        
+        { topic: "Conclusión", level: "Avanzado", question: "¿Qué poderosa y profunda analogía utiliza el autor para cerrar la reflexión final sobre nuestro duro impacto en la naturaleza?", options: [ { text: "A) 'La dramática extinción es simplemente el precio inevitable a pagar por el imparable avance tecnológico moderno.'", isCorrect: false, feedback: "El mensaje central del video no busca justificar la destrucción escudándose en el progreso, sino que aboga seriamente por la conservación y el respeto." }, { text: "B) 'Lo que estamos haciendo cruelmente a los bosques es un espejo exacto de lo que nos hacemos a nosotros mismos.'", isCorrect: true, feedback: "Al dañar la biósfera general de la cual dependemos biológicamente para sobrevivir, en última instancia, y sin darnos cuenta, nos estamos haciendo daño a nosotros mismos." }, { text: "C) 'El ser humano es por derecho el rey absoluto y legítimo propietario de cada ser viviente en todo el planeta Tierra.'", isCorrect: false, feedback: "Se menciona explícitamente que respetar es una ley no escrita que es esencial aplicar en la naturaleza, no se trata de una relación de dominación absoluta." }, { text: "D) 'Pronto mudaremos sin problema alguno toda nuestra civilización humana hacia otros planetas intactos de la galaxia.'", isCorrect: false, feedback: "Ese tipo de pensamiento escapista no forma parte en lo absoluto del poderoso mensaje de conservación ambiental central expuesto en la obra." } ] }
+    ];
+
+    let currentQIndex = 0;
+    let score = 0;
+    let hits = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let timeRemaining = 20;
+    let timerInterval;
+    let shuffledQuestions = [];
+
+    function startTimer() {
+        timeRemaining = 20;
+        const timerBar = document.getElementById('timer-bar');
+        timerBar.style.width = '100%';
+        timerBar.className = 'h-full bg-green-400 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(16,185,129,0.8)]';
+        
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            let pct = (timeRemaining / 20) * 100;
+            timerBar.style.width = pct + '%';
+            
+            if(timeRemaining <= 5 && timeRemaining > 0) {
+                timerBar.classList.replace('bg-green-400', 'bg-red-500');
+                timerBar.classList.replace('shadow-[0_0_10px_rgba(16,185,129,0.8)]', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
+                timerBar.parentElement.classList.add('animate-pulse');
+                SoundEngine.playTick(); 
+            }
+            if(timeRemaining <= 0) {
+                clearInterval(timerInterval);
+                timerBar.parentElement.classList.remove('animate-pulse');
+            }
+        }, 1000);
+    }
+    
+    function stopTimer() {
+        clearInterval(timerInterval);
+        document.getElementById('timer-bar').parentElement.classList.remove('animate-pulse');
+    }
+
+    function applyTiltEffect(element) {
+        element.addEventListener('mousemove', (e) => {
+            const rect = element.getBoundingClientRect();
+            const x = e.clientX - rect.left; 
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            
+            const rotateX = ((y - centerY) / centerY) * -10; 
+            const rotateY = ((x - centerX) / centerX) * 10;
+            
+            element.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
+        });
+        element.addEventListener('mouseleave', () => {
+            element.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
+        });
+    }
+
+    async function startQuiz() {
+        SoundEngine.playClick();
+        await SoundEngine.init(); 
+        
+        document.getElementById('screen-intro').classList.remove('active');
+        
+        setTimeout(() => {
+            document.getElementById('screen-intro').style.display = 'none';
+            const quizScreen = document.getElementById('screen-quiz');
+            quizScreen.style.display = 'flex';
+            void quizScreen.offsetWidth;
+            quizScreen.classList.add('active');
+            
+            // Randomizar (Límite a 20 preguntas)
+            shuffledQuestions = questionsDB.sort(() => 0.5 - Math.random()).map(q => ({
+                ...q, options: q.options.sort(() => 0.5 - Math.random())
+            }));
+            
+            evoBot.say("Sistemas ecológicos en línea. Recuerda: +10 puntos por cada acierto biológico. ¡Protege el bioma!", 'normal');
+            loadQuestion();
+        }, 500); 
+    }
+
+    function loadQuestion() {
+        const q = shuffledQuestions[currentQIndex];
+        
+        document.getElementById('stat-question').textContent = `${currentQIndex + 1}/20`;
+        document.getElementById('progress-bar').style.width = `${(currentQIndex / 20) * 100}%`;
+        
+        document.getElementById('topic-text').innerHTML = `${q.topic} <span class="ml-2 px-2 py-0.5 bg-slate-800 text-[10px] rounded border border-slate-600">${q.level}</span>`;
+        
+        const qText = document.getElementById('question-text');
+        scrambleText(qText, q.question, 1000); 
+        
+        const optCont = document.getElementById('options-container');
+        optCont.innerHTML = '';
+        
+        q.options.forEach((opt, index) => {
+            let cleanText = opt.text.replace(/^[A-D]\) /, '');
+            let letter = String.fromCharCode(65 + index);
+            
+            const btn = document.createElement('div');
+            btn.className = `option-card p-5 rounded-2xl flex items-center gap-4 opacity-0 transform translate-y-8`;
+            btn.style.transition = `background 0.3s, border-color 0.3s, box-shadow 0.3s, opacity 0.4s ease ${index * 0.15}s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${index * 0.15}s`;
+            
+            btn.innerHTML = `
+                <div class="option-content flex items-center gap-4 w-full pointer-events-none">
+                    <div class="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-500 flex items-center justify-center font-sci font-bold text-2xl text-green-400 shrink-0 shadow-inner group-hover:bg-green-400 group-hover:text-slate-900 transition-colors">
+                        ${letter}
+                    </div>
+                    <p class="text-[17px] text-gray-200 font-inter leading-tight">${cleanText}</p>
+                </div>
+            `;
+            
+            applyTiltEffect(btn);
+            btn.onmouseenter = () => SoundEngine.playHover();
+            btn.onclick = (e) => selectOption(btn, opt, cleanText, e);
+            optCont.appendChild(btn);
+            
+            setTimeout(() => {
+                btn.classList.remove('opacity-0', 'translate-y-8');
+                setTimeout(()=> { btn.style.transition = `background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.1s`; }, 400);
+            }, 50);
+        });
+
+        startTimer();
+    }
+
+    function selectOption(btnElement, optData, cleanText, event) {
+        SoundEngine.playClick();
+        stopTimer();
+        
+        const allOpts = document.getElementById('options-container').children;
+        for(let opt of allOpts) opt.classList.add('disabled');
+
+        if(optData.isCorrect) {
+            btnElement.classList.remove('disabled');
+            btnElement.classList.add('selected-correct');
+            
+            score += 10;
+            hits++;
+            streak++;
+            if(streak > maxStreak) maxStreak = streak;
+            
+            const streakCounter = document.getElementById('streak-counter');
+            streakCounter.textContent = `RACHA: x${streak}`;
+            if(streak >= 3) {
+                streakCounter.classList.add('streak-active');
+                SoundEngine.playCombo();
+                fireConfetti(true);
+                evoBot.say(`¡COMBO x${streak}! Tu entendimiento de los ecosistemas es asombroso.`, 'combo', 3000);
+            } else {
+                SoundEngine.playCorrect();
+                fireConfetti();
+            }
+            
+            document.getElementById('feedback-points').innerHTML = `<span class="text-green-400 font-bold">+10 Puntos</span>`;
+            setupModal(true, cleanText, optData.feedback);
+            
+        } else {
+            btnElement.classList.remove('disabled');
+            btnElement.classList.add('selected-incorrect');
+            streak = 0;
+            document.getElementById('streak-counter').textContent = `RACHA: x0`;
+            document.getElementById('streak-counter').classList.remove('streak-active');
+            
+            SoundEngine.playIncorrect();
+            document.getElementById('feedback-points').innerHTML = `<span class="text-red-400 font-bold">0 Puntos</span>`;
+            setupModal(false, cleanText, optData.feedback);
+            
+            if(Math.random() > 0.4) evoBot.say("Análisis incorrecto. Revisa la explicación biológica para tu próximo intento.", 'error', 5000);
+        }
+
+        document.getElementById('stat-score').textContent = score;
+    }
+
+    function setupModal(isCorrect, selectedText, explanation) {
+        const modal = document.getElementById('feedback-modal');
+        const panel = document.getElementById('feedback-panel');
+        const glow = document.getElementById('modal-glow');
+        
+        document.getElementById('feedback-selected').textContent = selectedText;
+        document.getElementById('feedback-explanation').innerHTML = explanation;
+        
+        if(isCorrect) {
+            document.getElementById('feedback-icon').innerHTML = '<i class="fas fa-check-circle text-green-400 drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]"></i>';
+            document.getElementById('feedback-title').textContent = 'ANÁLISIS CONFIRMADO';
+            document.getElementById('feedback-title').className = 'text-3xl font-sci font-bold text-green-400';
+            panel.style.borderTopColor = '#4ade80';
+            glow.style.backgroundColor = 'rgba(74, 222, 128, 0.15)';
+        } else {
+            document.getElementById('feedback-icon').innerHTML = '<i class="fas fa-times-circle text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]"></i>';
+            document.getElementById('feedback-title').textContent = 'ERROR ECOLÓGICO';
+            document.getElementById('feedback-title').className = 'text-3xl font-sci font-bold text-red-500';
+            panel.style.borderTopColor = '#ef4444';
+            glow.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+        }
+        
+        setTimeout(() => {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => { panel.classList.remove('translate-y-12', 'opacity-0'); }, 10);
+        }, 800);
+    }
+
+    function nextQuestion() {
+        SoundEngine.playClick();
+        const panel = document.getElementById('feedback-panel');
+        panel.classList.add('translate-y-12', 'opacity-0');
+        
+        setTimeout(() => {
+            document.getElementById('feedback-modal').classList.add('hidden');
+            document.getElementById('feedback-modal').classList.remove('flex');
+            
+            currentQIndex++;
+            if(currentQIndex < 20) loadQuestion();
+            else showResults();
+        }, 400); 
+    }
+
+    function showResults() {
+        const quizScreen = document.getElementById('screen-quiz');
+        quizScreen.classList.remove('active');
+        
+        setTimeout(() => {
+            quizScreen.style.display = 'none';
+            const resScreen = document.getElementById('screen-results');
+            resScreen.style.display = 'flex';
+            void resScreen.offsetWidth;
+            resScreen.classList.add('active');
+
+            if (score >= 100) {
+                SoundEngine.playCombo();
+                fireConfetti(true);
+                setTimeout(()=>fireConfetti(true), 1200); 
+            }
+
+            animateValue("final-score", 0, score, 1500, "/200"); 
+            animateValue("final-hits", 0, hits, 1500, "/20");
+            document.getElementById('final-streak').textContent = `x${maxStreak}`;
+
+            const rankEl = document.getElementById('final-rank');
+            // Escala de 20 preguntas (200 puntos totales)
+            if(score >= 180) { 
+                rankEl.innerHTML = "Rango: <span class='text-emerald-400'>Guardián de la Biósfera 🌍</span>"; 
+                rankEl.style.borderColor = "var(--neon-green)";
+                evoBot.say("¡Absolutamente brillante! Comprendes a la perfección la importancia de preservar nuestro planeta.", "correct");
+            } else if(score >= 120) { 
+                rankEl.innerHTML = "Rango: <span class='text-cyan-400'>Ecólogo Experto 🔬</span>"; 
+                rankEl.style.borderColor = "var(--neon-cyan)";
+                evoBot.say("Gran análisis genético, tienes un enorme potencial como investigador de los ecosistemas.", "correct");
+            } else if (score >= 60) {
+                rankEl.innerHTML = "Rango: <span class='text-green-400'>Explorador Naturalista 🌿</span>"; 
+                rankEl.style.borderColor = "var(--neon-green)";
+                evoBot.say("Buen avance ecológico, pero las interacciones biológicas aún requieren un poco más de repaso.", "normal");
+            } else { 
+                rankEl.innerHTML = "Rango: <span class='text-red-500'>Ecosistema en Riesgo ⚠️</span>"; 
+                rankEl.style.borderColor = "#ef4444";
+                evoBot.say("Daño detectado en la red trófica. Se requiere un estudio profundo de las bases biológicas.", "error");
+            }
+        }, 500);
+    }
+
+    function animateValue(id, start, end, duration, suffix = "") {
+        if (start === end) { document.getElementById(id).innerHTML = end + `<span class="text-xl text-gray-500">${suffix}</span>`; return; }
+        let current = start;
+        let increment = end > start ? (end > 50 ? 5 : 1) : -1;
+        let stepTime = Math.abs(Math.floor(duration / ((end - start)/increment)));
+        let obj = document.getElementById(id);
+        
+        let timer = setInterval(() => {
+            current += increment;
+            if (current >= end) {
+                current = end;
+                clearInterval(timer);
+            }
+            obj.innerHTML = current + `<span class="text-xl text-gray-500">${suffix}</span>`;
+        }, stepTime);
+    }
+</script>
+</body>
+</html>
