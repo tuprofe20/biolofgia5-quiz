@@ -3,907 +3,1115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIO LAB — BIODIVERSIDAD</title>
+    <title>TuProfe20 Lab — Biodiversidad y Conservación</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Rajdhani (Sci-Fi) e Inter (Legibilidad) -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Tone.js para Sonidos Sintetizados Interactivos -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
-    
-    <!-- Canvas Confetti -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Three.js & GSAP -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700;800&display=swap" rel="stylesheet">
 
     <style>
-        :root {
-            --neon-blue: #3b82f6;
-            --neon-cyan: #06b6d4;
-            --neon-violet: #8b5cf6;
-            --neon-green: #10b981;
-            --neon-orange: #f97316;
-            --dark-bg: #05070A;
-        }
-
-        body {
-            background-color: var(--dark-bg);
-            color: white;
-            font-family: 'Inter', sans-serif;
+        body { 
+            margin: 0; 
             overflow: hidden; 
-            user-select: none; 
-            perspective: 1000px;
+            background-color: #020b06; /* Deep forest dark green */
+            font-family: 'Outfit', 'Inter', sans-serif; 
+            color: #ffffff;
+            user-select: none;
         }
-
-        h1, h2, h3, .font-sci { font-family: 'Rajdhani', sans-serif; }
-
-        /* Glassmorphism para los paneles */
-        .glass-panel {
-            background: rgba(11, 20, 14, 0.55);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(16, 185, 129, 0.05);
-        }
-
-        /* Opciones con Efecto 3D (Tilt) */
-        .option-card {
-            background: rgba(30, 41, 59, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.1s;
-            cursor: pointer;
-            transform-style: preserve-3d;
-        }
-
-        .option-content {
-            transform: translateZ(20px); 
-            transition: all 0.3s;
-        }
-
-        .option-card:hover {
-            border-color: var(--neon-green);
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3), inset 0 0 15px rgba(16, 185, 129, 0.2);
-            background: rgba(15, 30, 25, 0.85);
-            z-index: 10;
-        }
-
-        .option-card.selected-correct {
-            background: rgba(16, 185, 129, 0.25) !important;
-            border-color: #10b981 !important;
-            box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), inset 0 0 20px rgba(16, 185, 129, 0.4) !important;
-            transform: scale(1.02) rotateX(0) rotateY(0) !important; 
-        }
-
-        .option-card.selected-incorrect {
-            background: rgba(239, 68, 68, 0.25) !important;
-            border-color: #ef4444 !important;
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6), inset 0 0 20px rgba(239, 68, 68, 0.4) !important;
-            transform: scale(0.98) rotateX(0) rotateY(0) !important;
-        }
-
-        .option-card.disabled {
+        
+        #matrix-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
             pointer-events: none;
-            opacity: 0.3;
-            filter: grayscale(100%);
-            transform: scale(0.95) rotateX(0) rotateY(0) !important;
-            transition: all 0.4s ease;
+            opacity: 0.25;
+            z-index: 1;
         }
 
-        /* Animaciones Neón */
+        .perspective-grid {
+            position: absolute;
+            bottom: -18%;
+            left: -50%;
+            width: 200%;
+            height: 65vh;
+            background-image: 
+                linear-gradient(rgba(16, 185, 129, 0.15) 1px, transparent 1px), /* Emerald green tint */
+                linear-gradient(90deg, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: perspective(650px) rotateX(65deg);
+            transform-origin: bottom center;
+            pointer-events: none;
+            opacity: 0.6;
+            z-index: 2;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.1) 0%, rgba(2, 11, 6, 0.95) 75%);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        #three-container {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+
+        /* Styling variables */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .unknown-pulse {
+            color: #f43f5e;
+            text-shadow: 0 0 15px rgba(244, 63, 94, 0.8);
+            animation: pulse-glow 1s infinite alternate;
+            font-weight: 900;
+        }
+
+        /* Animations */
         @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.8); }
+            from { text-shadow: 0 0 5px rgba(244, 63, 94, 0.5); transform: scale(1); }
+            to { text-shadow: 0 0 25px rgba(244, 63, 94, 1); transform: scale(1.05); }
         }
 
-        .btn-neon {
-            background: transparent;
-            border: 2px solid var(--neon-green);
-            color: var(--neon-green);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: pulse-glow 2s infinite;
+        @keyframes robot-celebrate {
+            0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-14px) rotate(-6deg) scale(1.08); }
+            75% { transform: translateY(-14px) rotate(6deg) scale(1.08); }
         }
+        .animate-robot-celebrate { animation: robot-celebrate 0.5s ease-in-out infinite; }
 
-        .btn-neon:hover {
-            background: var(--neon-green);
-            color: var(--dark-bg);
-            box-shadow: 0 0 40px var(--neon-green);
-            transform: scale(1.05) translateY(-2px);
+        @keyframes robot-sad {
+            0%, 100% { transform: translateX(0) rotate(0deg); }
+            20% { transform: translateX(-8px) rotate(-4deg); }
+            40% { transform: translateX(8px) rotate(4deg); }
+            60% { transform: translateX(-6px) rotate(-2deg); }
+            80% { transform: translateX(6px) rotate(2deg); }
         }
+        .animate-robot-sad { animation: robot-sad 0.7s ease-in-out infinite; }
 
-        /* Efecto Racha (Streak) */
-        @keyframes fire-pulse {
-            0% { text-shadow: 0 0 10px #f97316, 0 0 20px #f97316; transform: scale(1); }
-            50% { text-shadow: 0 0 20px #f97316, 0 0 30px #ef4444; transform: scale(1.1); }
-            100% { text-shadow: 0 0 10px #f97316, 0 0 20px #f97316; transform: scale(1); }
+        @keyframes robot-think {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-5px) rotate(-3deg); }
         }
-        .streak-active { animation: fire-pulse 1s infinite; color: var(--neon-orange); }
+        .animate-robot-think { animation: robot-think 2s ease-in-out infinite; }
 
-        /* Contenedor del Canvas Nativo */
-        #dna-canvas {
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100vw; height: 100vh; 
-            z-index: -5; 
-            pointer-events: none;
-            background: radial-gradient(circle at center, #0B140E 0%, #030508 100%);
-        }
-
-        /* BIO-Bot */
-        #evo-bot-container {
-            position: fixed; bottom: 20px; right: 20px; z-index: 100;
-            display: flex; flex-direction: column; align-items: flex-end; transition: all 0.5s ease;
-            pointer-events: none; /* Permite hacer clic a través del contenedor transparente */
-        }
-        .robot-hover { animation: float-slow 3s ease-in-out infinite; pointer-events: auto; }
-        @keyframes float-slow {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-        }
-
-        #speech-bubble {
-            background: rgba(11, 20, 14, 0.95);
-            border: 2px solid var(--neon-green);
-            border-radius: 20px 20px 0 20px;
-            padding: 15px 20px; margin-right: 0; margin-bottom: 15px;
-            max-width: 280px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.4);
-            opacity: 0; transform: scale(0.8) translateY(20px);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform-origin: bottom right;
-            pointer-events: auto; /* Reactiva los clics en el mensaje si es necesario */
-        }
-        #speech-bubble.active { opacity: 1; transform: scale(1) translateY(0); }
-
-        .robot-eye { animation: blink 4s infinite; transform-origin: center; }
-        @keyframes blink { 0%, 96%, 98% { transform: scaleY(1); } 97% { transform: scaleY(0.1); } }
-
-        /* Manejo de Pantallas */
-        .screen { display: none; opacity: 0; transition: opacity 0.5s ease-out; }
-        .screen.active { display: flex; opacity: 1; animation: slideUpFade 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-        @keyframes slideUpFade {
-            from { opacity: 0; transform: translateY(60px) scale(0.95); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        .scramble-text { font-family: 'Rajdhani', monospace; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(2, 44, 34, 0.5); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
     </style>
 </head>
-<body class="w-screen h-screen flex flex-col relative text-gray-100">
+<body>
+    <div id="root"></div>
 
-    <!-- Fondo Nativo Canvas -->
-    <canvas id="dna-canvas"></canvas>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
 
-    <!-- ROBOT BIO-BOT -->
-    <div id="evo-bot-container">
-        <div id="speech-bubble" class="font-sci text-green-100 text-lg tracking-wide">
-            ¡Iniciando sistemas ecológicos!
-        </div>
-        <div class="robot-hover cursor-pointer" onclick="evoBot.poke()">
-            <svg width="100" height="120" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <line x1="50" y1="30" x2="50" y2="10" stroke="#10b981" stroke-width="4"/>
-                <circle cx="50" cy="8" r="6" fill="#10b981" class="animate-pulse"/>
-                <rect x="20" y="30" width="60" height="50" rx="15" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
-                <rect x="28" y="40" width="44" height="25" rx="5" fill="#0B0E14" stroke="#06b6d4" stroke-width="2"/>
-                <g id="robot-eyes">
-                    <rect x="35" y="48" width="10" height="8" rx="2" fill="#10b981" class="robot-eye" style="box-shadow: 0 0 10px #10b981;"/>
-                    <rect x="55" y="48" width="10" height="8" rx="2" fill="#10b981" class="robot-eye" style="box-shadow: 0 0 10px #10b981;"/>
-                </g>
-                <path d="M 30 80 L 70 80 L 80 110 L 20 110 Z" fill="#1e293b" stroke="#10b981" stroke-width="3"/>
-                <circle cx="50" cy="95" r="8" fill="#f59e0b" class="animate-pulse"/>
-            </svg>
-        </div>
-    </div>
+        const COLORS = {
+            emerald: '#10b981', // Main theme
+            teal: '#14b8a6',
+            pink: '#f43f5e',
+            neonGreen: '#22c55e',
+            neonOrange: '#f97316',
+            neonYellow: '#eab308'
+        };
 
-    <!-- PANTALLA INICIAL -->
-    <div id="screen-intro" class="screen active flex-col items-center justify-center w-full h-full p-8 z-10 text-center">
-        <div class="glass-panel p-12 rounded-3xl max-w-4xl w-full flex flex-col items-center relative overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
+        const ExercisesDB = [
+            {
+                id: 1, 
+                title: "Módulo 1: Fundamentos",
+                story: `Analizaremos la definición y los tres atributos fundamentales que estructuran la biodiversidad. Escanea los datos primarios para avanzar.`,
+                initialData: { "Tópico": "Definición", "Nivel de Análisis": "Macro", "Biodiversidad": "?", "Atributos": "?" },
+                steps: [
+                    {
+                        q: "¿Cómo se define formalmente la biodiversidad en el ámbito ecológico?",
+                        opts: [
+                            "Exclusivamente como la cantidad de animales vertebrados presentes en una reserva natural.",
+                            "Como la variedad de especies vivas sobre la Tierra de todos los grupos taxonómicos en un espacio determinado.",
+                            "Únicamente como la cantidad de biomasa de la flora presente en bosques tropicales.",
+                            "Como el total de recursos económicos derivados de la explotación del suelo."
+                        ], ans: 1,
+                        boardTag: "DEFINICIÓN OFICIAL", 
+                        boardInit: `Biodiversidad = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Biodiversidad = <b class='text-emerald-400 font-bold text-4xl ml-4 drop-shadow-lg'>Variedad de Especies Vivas</b>`,
+                        updateData: { "Biodiversidad": "Definida" },
+                        fb_c: "¡Correcto! Abarca toda la variedad biológica de la Tierra.", fb_w: "Revisa la opción que engloba a todos los grupos taxonómicos."
+                    },
+                    {
+                        q: "¿Cuáles son los tres atributos fundamentales que definen la biodiversidad?",
+                        opts: [
+                            "Origen, evolución y extinción.",
+                            "Riqueza, abundancia y dominancia.",
+                            "Composición, estructura y función.",
+                            "Genética, taxonomía y geografía."
+                        ], ans: 2,
+                        boardTag: "LOS 3 ATRIBUTOS", 
+                        boardInit: `Atributos Clave = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Atributos = <b class='text-white font-bold text-3xl ml-4'>Composición, Estructura, Función</b>`,
+                        updateData: { "Atributos": "Identificados" },
+                        fb_c: "¡Exacto! Son los pilares de la organización ecológica.", fb_w: "Estos atributos definen qué hay, cómo se organiza y qué interacciones existen."
+                    },
+                    {
+                        q: "¿En qué consiste el atributo de composición de la biodiversidad?",
+                        opts: [
+                            "Explica cómo interactúan las especies ecológicamente a través de la depredación y la simbiosis.",
+                            "Mide la abundancia relativa de especies y la conectividad entre los ecosistemas.",
+                            "Identifica qué especies están presentes y cuántos tipos existen en un área determinada.",
+                            "Analiza las variaciones fenotípicas causadas por mutaciones genéticas."
+                        ], ans: 2,
+                        boardTag: "ATRIBUTO: COMPOSICIÓN", 
+                        boardInit: `Composición evalúa: <br/><br/> <span class='unknown-pulse text-4xl'>¿Quiénes y cuántos son?</span>`, 
+                        boardFinal: `Composición evalúa: <br/><br/> <b class='text-teal-400 font-bold text-4xl'>Identidad y Variedad de Especies</b>`,
+                        updateSim: { connectDist: 5, nodes: 50 },
+                        fb_c: "Identifica la presencia y variedad de entidades biológicas.", fb_w: "La composición responde a las preguntas: ¿Qué especies hay y cuántas son?"
+                    },
+                    {
+                        q: "¿Qué aspecto analiza el atributo de estructura dentro de la biodiversidad?",
+                        opts: [
+                            "La organización de la biodiversidad mediante la abundancia relativa de especies/ecosistemas y el grado de conectividad.",
+                            "El número total de secuencias de ADN presentes en una especie dada.",
+                            "Los tipos de servicios gubernamentales que los ecosistemas proveen a las ciudades.",
+                            "La tasa de descomposición de materia orgánica en el suelo."
+                        ], ans: 0,
+                        boardTag: "ATRIBUTO: ESTRUCTURA", 
+                        boardInit: `Estructura evalúa: <br/><br/> <span class='unknown-pulse text-4xl'>¿Cómo se organizan?</span>`, 
+                        boardFinal: `Estructura evalúa: <br/><br/> <b class='text-teal-400 font-bold text-4xl'>Organización y Conectividad</b>`,
+                        updateSim: { connectDist: 25, nodes: 100 },
+                        fb_c: "La conectividad y organización física definen la estructura.", fb_w: "Se refiere a la forma en que los componentes biológicos se organizan en el espacio."
+                    },
+                    {
+                        q: "El atributo de función reconoce principalmente:",
+                        opts: [
+                            "Qué grupos taxonómicos se han extinguido en una zona específica.",
+                            "Cómo interactúan las especies evolutiva y ecológicamente (ej. depredación, simbiosis y ciclo de nutrientes).",
+                            "El porcentaje exacto de especies marinas clasificadas en peligro crítico.",
+                            "La riqueza total de especies sin considerar sus interacciones."
+                        ], ans: 1,
+                        boardTag: "ATRIBUTO: FUNCIÓN", 
+                        boardInit: `Función = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Función = <b class='text-emerald-400 font-black text-5xl ml-4 drop-shadow-lg'>Interacciones Ecológicas</b>`,
+                        updateData: { "Estado del Análisis": "Completado" }, updateSim: { speed: 1.5, connectDist: 35 },
+                        fb_c: "¡Módulo superado! La función se basa en la interacción vital.", fb_w: "Recuerda, la función implica procesos dinámicos y relaciones (depredación, simbiosis).", isFinal: true
+                    }
+                ]
+            },
+            {
+                id: 2, 
+                title: "Módulo 2: Niveles y Medición",
+                story: `La biodiversidad se organiza en distintos niveles y puede cuantificarse usando herramientas estadísticas. Configuremos los parámetros métricos.`,
+                initialData: { "Niveles": "?", "Biodiversidad Genética": "?", "Riqueza/Uniformidad": "?", "Índices": "?" },
+                steps: [
+                    {
+                        q: "¿Cuáles son los tres niveles o tipos de biodiversidad estudiados en la literatura científica?",
+                        opts: [
+                            "Terrestre, acuática y atmosférica.",
+                            "Genética, taxonómica (o de especies) y de ecosistemas.",
+                            "Celular, tisular y orgánica.",
+                            "Botánica, zoológica y microbiológica."
+                        ], ans: 1,
+                        boardTag: "NIVELES DE BIODIVERSIDAD", 
+                        boardInit: `Jerarquía Ecológica: <span class='unknown-pulse text-4xl ml-4'>?</span>`, 
+                        boardFinal: `Niveles: <b class='text-white font-bold text-3xl'>Genética, Taxonómica, Ecosistemas</b>`, 
+                        updateData: { "Niveles": "Gen, Especie, Ecosistema" }, fb_c: "¡Bien! Estos abarcan desde el ADN hasta biomas completos.", fb_w: "Busca la opción que va de la escala molecular a la ecológica."
+                    },
+                    {
+                        q: "¿En qué se enfoca la biodiversidad genética y cómo se manifiesta visiblemente?",
+                        opts: [
+                            "En la diversidad de hábitats marinos y se expresa mediante la temperatura del agua.",
+                            "En la diversidad de genes expresados entre y dentro de una misma especie, manifestándose en el fenotipo.",
+                            "En la cantidad de especies cultivadas bajo el sistema de monocultivo.",
+                            "En la tasa de aceleración de las extinciones masivas de microorganismos."
+                        ], ans: 1,
+                        boardTag: "BIODIVERSIDAD GENÉTICA", 
+                        boardInit: `Nivel Molecular = <span class='unknown-pulse text-4xl ml-4'>?</span>`, 
+                        boardFinal: `Expresión Genética = <b class='text-white font-bold text-4xl ml-2'>Fenotipo</b>`, 
+                        updateData: { "Biodiversidad Genética": "Diversidad Fenotípica" }, fb_c: "Correcto. Los genes determinan la variedad física (fenotipo).", fb_w: "Se enfoca en la variabilidad dentro de una misma especie."
+                    },
+                    {
+                        q: "Al analizar la biodiversidad de especies, ¿cuál es la diferencia entre riqueza y uniformidad?",
+                        opts: [
+                            "La riqueza es el número total de especies en un área; la uniformidad indica cómo se distribuyen sus abundancias.",
+                            "La riqueza mide la biomasa total y la uniformidad el número de individuos machos y hembras.",
+                            "La riqueza calcula la edad reproductiva promedio y la uniformidad su tasa de natalidad.",
+                            "La riqueza se mide con el índice de Simpson y la uniformidad solo mediante imágenes satelitales."
+                        ], ans: 0,
+                        boardTag: "MÉTRICAS BÁSICAS", 
+                        boardInit: `Riqueza vs Uniformidad <br/><br/> <span class='unknown-pulse text-4xl'>?</span>`, 
+                        boardFinal: `<div class='flex flex-col text-2xl gap-2'><p><b>Riqueza:</b> Total de especies</p><p><b>Uniformidad:</b> Distribución</p></div>`,
+                        updateData: { "Riqueza/Uniformidad": "Diferenciadas" },
+                        fb_c: "La riqueza cuenta, la uniformidad evalúa proporciones.", fb_w: "Riqueza se refiere a la cantidad de especies distintas presentes."
+                    },
+                    {
+                        q: "¿Cuál es la función principal del Índice de Simpson en los estudios ecológicos?",
+                        opts: [
+                            "Combinar riqueza y abundancia mediante una escala logarítmica detallada.",
+                            "Medir la probabilidad de que dos individuos elegidos al azar sean de la misma especie, evaluando la dominancia.",
+                            "Contar el número exacto de bacterias en muestras microbiológicas.",
+                            "Estimar la tasa de deforestación por hectárea en bosques tropicales."
+                        ], ans: 1,
+                        boardTag: "ÍNDICE DE SIMPSON", 
+                        boardInit: `D = Σ(n/N)² <br/><br/> Evalúa: <span class='unknown-pulse text-4xl'>?</span>`, 
+                        boardFinal: `Simpson Evalúa: <br/><br/> <b class='text-emerald-400 font-bold text-5xl'>Dominancia</b>`, 
+                        updateSim: { nodes: 150, nodeSize: 0.8 },
+                        fb_c: "Simpson se centra en la dominancia de especies comunes.", fb_w: "Este índice está muy relacionado con la probabilidad y especies dominantes."
+                    },
+                    {
+                        q: "¿Qué distingue al Índice de Shannon-Wiener frente a otros índices de biodiversidad?",
+                        opts: [
+                            "Excluye la abundancia de especies para centrarse únicamente en la genética celular.",
+                            "Cuantifica únicamente la contaminación de dióxido de carbono en zonas urbanas.",
+                            "Combina riqueza y abundancia de especies utilizando una escala logarítmica, ideal para estudios detallados.",
+                            "Evalúa la masa total de nutrientes absorbidos por las plantas."
+                        ], ans: 2,
+                        boardTag: "ÍNDICE DE SHANNON", 
+                        boardInit: `H' = -Σ(p_i * ln(p_i)) <br/><br/> Diferenciador: <span class='unknown-pulse text-4xl ml-2'>?</span>`, 
+                        boardFinal: `Shannon-Wiener: <br/><br/> <b class='text-emerald-400 font-black text-4xl drop-shadow-lg'>Riqueza + Abundancia (Log)</b>`, 
+                        updateData: { "Índices": "Simpson & Shannon Listos" }, updateSim: { connectDist: 30, speed: 2 },
+                        fb_c: "¡Módulo completado! Shannon es ideal para conocer la diversidad real.", fb_w: "Utiliza logaritmos naturales (ln) y considera tanto la riqueza como la abundancia equitativamente.", isFinal: true
+                    }
+                ]
+            },
+            {
+                id: 3, 
+                title: "Módulo 3: Estadísticas y Amenazas",
+                story: `La red de la vida está bajo presión. Examinemos los datos sobre especies amenazadas y los factores humanos que impulsan la pérdida de biodiversidad.`,
+                initialData: { "Especies Conocidas": "?", "Total Estimado": "?", "En Peligro": "?", "Amenazas Clave": "?" },
+                steps: [
+                    {
+                        q: "Según los datos reportados, ¿cuántas especies se conocen actualmente frente al número total estimado en el planeta?",
+                        opts: [
+                            "Se conocen 500 mil especies de un estimado total de 2 millones.",
+                            "Se conocen 1 millón de especies de un estimado total de 5 millones.",
+                            "Se conocen 1,4 millones de especies de un total estimado entre 10 y 100 millones.",
+                            "Se conocen 14 millones de especies y no existen más por descubrir."
+                        ], ans: 2,
+                        boardTag: "INVENTARIO GLOBAL", 
+                        boardInit: `Conocidas: <span class='unknown-pulse text-4xl'>?</span> <br/> Total Estimado: <span class='unknown-pulse text-4xl'>?</span>`, 
+                        boardFinal: `Conocidas: <b class='text-white font-bold'>1,4M</b> <br/><br/> Estimado: <b class='text-white font-bold'>10M a 100M</b>`, 
+                        updateData: { "Especies Conocidas": "1,4 Millones", "Total Estimado": "10-100 Millones" }, fb_c: "Correcto. Aún ignoramos a la inmensa mayoría de las especies.", fb_w: "Pista: La cifra de especies estimadas supera ampliamente los 10 millones."
+                    },
+                    {
+                        q: "De las más de 47,000 especies evaluadas citadas en los estudios, ¿qué porcentaje aproximado se encuentra en peligro de extinción?",
+                        opts: [
+                            "Aproximadamente el 10%.",
+                            "Aproximadamente el 22%.",
+                            "En torno al 36%.",
+                            "Más del 65%."
+                        ], ans: 2,
+                        boardTag: "ESTADO DE CONSERVACIÓN", 
+                        boardInit: `Especies en Riesgo = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Riesgo de Extinción = <b class='text-red-500 font-bold text-6xl ml-4 drop-shadow-lg'>36%</b>`,
+                        updateData: { "En Peligro": "~36%" }, updateSim: { nodes: 60, colorAlert: true },
+                        fb_c: "Un número alarmante de especies evaluadas está en peligro.", fb_w: "Supera la tercera parte del total evaluado."
+                    },
+                    {
+                        q: "¿Cuáles son los cinco factores principales impulsores de la pérdida de biodiversidad?",
+                        opts: [
+                            "Caza de subsistencia, erupciones volcánicas, maremotos, lluvias torrenciales y erosión eólica.",
+                            "Sobreexplotación del medio natural, pérdida de hábitats, contaminación, especies invasoras y cambio climático.",
+                            "Permacultura, agricultura orgánica, reciclaje de residuos, reforestación y conservación ambiental.",
+                            "Radiación solar, mutaciones neutras, migración estacional y fluctuaciones térmicas naturales."
+                        ], ans: 1,
+                        boardTag: "MOTORES DE EXTINCIÓN", 
+                        boardInit: `5 Amenazas = <span class='unknown-pulse text-4xl ml-2'>?</span>`, 
+                        boardFinal: `Amenazas: <br/><b class='text-red-400 font-bold text-2xl'>Hábitat, Explotación, Contaminación, Invasoras, Clima</b>`, 
+                        updateData: { "Amenazas Clave": "5 Factores Antrópicos" }, updateSim: { connectDist: 15, speed: 0.5 },
+                        fb_c: "Correcto. Estos son los factores causados mayoritariamente por la humanidad.", fb_w: "Busca las amenazas derivadas de actividades industriales y expansivas humanas."
+                    },
+                    {
+                        q: "¿Qué diferencia crítica existe entre el monocultivo y la permacultura respecto al suelo?",
+                        opts: [
+                            "El monocultivo regenera nutrientes rápidamente, mientras que la permacultura los agota.",
+                            "El monocultivo agota el suelo por usar una sola especie, mientras que la permacultura integra varias especies imitando un ecosistema natural.",
+                            "Ambos sistemas provocan la misma acumulación desmedida de desperdicios energéticos.",
+                            "La permacultura depende estrictamente de fertilizantes sintéticos."
+                        ], ans: 1,
+                        boardTag: "SISTEMAS AGRÍCOLAS", 
+                        boardInit: `Monocultivo vs Permacultura <br/><br/> <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Monocultivo: <b class='text-red-400'>Agota</b> <br/><br/> Permacultura: <b class='text-emerald-400'>Regenera</b>`, 
+                        updateSim: { nodes: 120, connectDist: 40, colorAlert: false },
+                        fb_c: "¡Módulo superado! La permacultura promueve la diversidad.", fb_w: "El monocultivo (una sola especie) daña los ecosistemas a largo plazo.", isFinal: true
+                    }
+                ]
+            },
+            {
+                id: 4, 
+                title: "Módulo 4: Servicios y Conservación",
+                story: `La naturaleza provee soluciones vitales. Exploremos los servicios ecosistémicos, el valor intrínseco de la vida y el rol defensivo de la genética.`,
+                initialData: { "Servicios": "?", "Valor Intrínseco": "?", "Equilibrio": "?", "Genética Adaptativa": "?" },
+                steps: [
+                    {
+                        q: "¿Cuáles de los siguientes son ejemplos de servicios ecosistémicos generados por la biodiversidad?",
+                        opts: [
+                            "Regulación bursátil internacional y pavimentación urbana.",
+                            "Purificación de agua, oxigenación del aire, reciclamiento de residuos y polinización de cultivos.",
+                            "Producción de energía nuclear y síntesis de polímeros plásticos.",
+                            "Extracción masiva de minerales pesados sin impacto en el entorno."
+                        ], ans: 1,
+                        boardTag: "SERVICIOS ECOSISTÉMICOS", 
+                        boardInit: `Beneficios Naturales = <span class='unknown-pulse text-4xl ml-2'>?</span>`, 
+                        boardFinal: `Beneficios = <b class='text-white font-bold text-3xl'>Agua Pura, Oxígeno, Polinización</b>`, 
+                        updateData: { "Servicios": "Soporte Vital Básico" }, fb_c: "¡Excelente! Procesos vitales que permiten la vida en la Tierra.", fb_w: "Identifica procesos naturales y biológicos, no industriales."
+                    },
+                    {
+                        q: "¿Por qué se afirma que la biodiversidad funciona como un excelente indicador medioambiental?",
+                        opts: [
+                            "Porque la variedad y cantidad de especies refleja la magnitud de la presión ejercida por la actividad humana.",
+                            "Porque fija de forma directa los precios de exportación de productos agrícolas.",
+                            "Porque mide exclusivamente la temperatura atmosférica sin considerar factores orgánicos.",
+                            "Porque permite predecir eventos climáticos astronómicos a largo plazo."
+                        ], ans: 0,
+                        boardTag: "BIOINDICADORES", 
+                        boardInit: `Indicador porque: <br/><br/> <span class='unknown-pulse text-4xl ml-4'>?</span>`, 
+                        boardFinal: `Refleja: <b class='text-emerald-400 font-bold text-4xl'>Presión Humana y Salud del Medio</b>`,
+                        updateData: { "Salud Ambiental": "Medible" },
+                        fb_c: "A menor diversidad, mayor impacto y degradación humana registrada.", fb_w: "Su estado nos avisa sobre los daños que estamos causando al entorno."
+                    },
+                    {
+                        q: "¿Qué representa el valor intrínseco de la biodiversidad?",
+                        opts: [
+                            "El valor comercial asignado a los recursos biológicos en los mercados globales.",
+                            "El valor que posee por el simple hecho de existir y albergar millones de años de historia evolutiva, independientemente de su utilidad humana.",
+                            "El costo presupuestario de mantener áreas naturales protegidas y zoológicos.",
+                            "La cantidad total de calorías aprovechables que brinda la fauna a los depredadores."
+                        ], ans: 1,
+                        boardTag: "ÉTICA AMBIENTAL", 
+                        boardInit: `Valor Intrínseco = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Valor Intrínseco = <br/><b class='text-emerald-400 font-bold text-4xl drop-shadow-lg'>Derecho a Existir</b>`, 
+                        updateData: { "Valor Intrínseco": "Garantizado" },
+                        fb_c: "Así es. La naturaleza tiene valor más allá de lo económico.", fb_w: "Este valor no depende de la utilidad que las especies tengan para los humanos."
+                    },
+                    {
+                        q: "Además del equilibrio ecológico, ¿qué otros valores de la biodiversidad son esenciales para las sociedades humanas?",
+                        opts: [
+                            "Únicamente un valor recreativo sin impacto económico o social.",
+                            "Valor económico (fuente de alimentos, medicinas y turismo) y valor cultural para comunidades locales e indígenas.",
+                            "La capacidad de sustituir permanentemente todas las fuentes energéticas fósiles.",
+                            "La garantía de una producción industrial sin necesidad de materias primas."
+                        ], ans: 1,
+                        boardTag: "VALORES ASOCIADOS", 
+                        boardInit: `Otros Valores = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Valores = <b class='text-white font-bold text-4xl'>Económico y Cultural</b>`, 
+                        fb_c: "La biodiversidad sostiene nuestra economía y nuestra herencia cultural.", fb_w: "Proveen recursos materiales e inmateriales esenciales."
+                    },
+                    {
+                        q: "¿Qué consecuencia inmediata sufre un ecosistema cuando su biodiversidad es limitada o poco variada?",
+                        opts: [
+                            "Se vuelve completamente inmune ante enfermedades o plagas emergentes.",
+                            "Pierde su salud, la red trófica se desequilibra y disminuye la eficiencia en el uso de la energía.",
+                            "Aumenta espontáneamente la tasa de reproducción de todas las especies presentes.",
+                            "Se elimina el desperdicio energético de forma absoluta."
+                        ], ans: 1,
+                        boardTag: "EFECTOS DE LA PÉRDIDA", 
+                        boardInit: `Efecto de Baja Biodiversidad: <br/><br/> <span class='unknown-pulse text-4xl'>?</span>`, 
+                        boardFinal: `Consecuencia: <b class='text-red-400 font-bold text-4xl'>Desequilibrio y Pérdida de Eficiencia</b>`,
+                        updateData: { "Equilibrio": "Roto sin Diversidad" }, updateSim: { nodes: 30, connectDist: 10, colorAlert: true },
+                        fb_c: "La pérdida debilita la resiliencia del ecosistema completo.", fb_w: "Sin diversidad, el sistema se vuelve frágil y menos eficiente."
+                    },
+                    {
+                        q: "¿De qué manera la variabilidad genética ayuda a las especies a resistir amenazas climáticas o patógenos?",
+                        opts: [
+                            "Permite generar clones idénticos que evitan la selección natural.",
+                            "Brinda una reserva adaptativa para la evolución frente a cambios ambientales o enfermedades.",
+                            "Inhibe la necesidad de consumir recursos hídricos en épocas de sequía.",
+                            "Evita que las especies sufran depredación por parte de carnívoros."
+                        ], ans: 1,
+                        boardTag: "DEFENSA GENÉTICA", 
+                        boardInit: `Variabilidad = <span class='unknown-pulse text-5xl ml-4'>?</span>`, 
+                        boardFinal: `Variabilidad = <b class='text-emerald-400 font-black text-5xl drop-shadow-[0_0_15px_rgba(16,185,129,0.8)]'>Reserva Adaptativa</b>`, 
+                        updateData: { "Genética Adaptativa": "Alta Resiliencia" }, updateSim: { nodes: 200, connectDist: 40, colorAlert: false, speed: 2.5 },
+                        fb_c: "¡Laboratorio superado con éxito! La genética es el seguro de vida de la evolución.", fb_w: "Tener genes diversos permite que algunos individuos sobrevivan ante nuevas enfermedades.", isFinal: true
+                    }
+                ]
+            }
+        ];
+
+        const SoundEngine = {
+            ctx: null,
+            isMuted: false,
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+            },
+            toggleMute(m) { this.isMuted = m; },
+            playTone(freq, type, duration, vol = 0.65) {
+                if (!this.ctx || this.isMuted) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            },
+            hover() { this.playTone(900, 'sine', 0.05, 0.1); },
+            click() { this.playTone(800, 'square', 0.05, 0.2); },
+            correct() { 
+                this.playTone(523, 'triangle', 0.15, 0.4);
+                setTimeout(() => this.playTone(659, 'triangle', 0.15, 0.4), 100);
+                setTimeout(() => this.playTone(1046, 'sine', 0.4, 0.5), 200); 
+            },
+            wrong() { 
+                this.playTone(250, 'sawtooth', 0.3, 0.4); 
+                setTimeout(() => this.playTone(150, 'sawtooth', 0.4, 0.5), 150); 
+            },
+            success() {
+                this.playTone(400, 'sine', 0.1, 0.3);
+                setTimeout(() => this.playTone(600, 'sine', 0.1, 0.3), 100);
+                setTimeout(() => this.playTone(800, 'sine', 0.3, 0.3), 200);
+            }
+        };
+
+        const SpeakerIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-emerald-400"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>;
+        const SpeakerXIcon = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6 text-pink-500"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>;
+
+        const BioParticlesBackground = () => {
+            const canvasRef = useRef(null);
             
-            <div class="relative w-32 h-32 mb-6 mt-4">
-                <i class="fas fa-globe-americas text-7xl text-green-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-bounce" style="animation-duration: 3s;"></i>
-                <i class="fas fa-leaf text-4xl text-emerald-300 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-60 animate-spin-slow" style="margin-left: 20px; margin-top: 15px;"></i>
-            </div>
-            
-            <h2 class="text-2xl text-emerald-300 font-sci tracking-widest mb-2 font-bold uppercase">Instituto de Biología — Ecología y Evolución</h2>
-            <h1 class="text-5xl md:text-7xl font-bold font-sci bg-clip-text text-transparent bg-gradient-to-r from-green-400 via-emerald-400 to-cyan-400 mb-6 drop-shadow-lg tracking-tight">
-                LA BIODIVERSIDAD<br>Y SU IMPORTANCIA
-            </h1>
-            <p class="text-xl text-gray-300 mb-10 tracking-wider font-light max-w-2xl leading-relaxed">
-                Laboratorio de Genética y Ecosistemas.<br> Responde 20 preguntas, obtén <span class="text-green-400 font-bold">+10 puntos</span> por acierto ecológico.
-            </p>
-            
-            <button onclick="startQuiz()" onmouseenter="SoundEngine.playHover()" class="btn-neon font-sci font-bold text-2xl py-4 px-12 rounded-full flex items-center gap-4 group">
-                <span>INICIAR SIMULACIÓN BIOLÓGICA</span>
-                <i class="fas fa-satellite-dish group-hover:rotate-45 transition-transform duration-300"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- PANTALLA DEL CUESTIONARIO -->
-    <div id="screen-quiz" class="screen flex-col w-full h-full z-10 p-4 md:p-8">
-        
-        <!-- Header / Stats -->
-        <header class="glass-panel rounded-2xl p-4 flex flex-wrap justify-between items-center mb-4 gap-4">
-            <div class="flex items-center gap-4">
-                <div class="w-12 h-12 rounded-full bg-green-900/50 flex items-center justify-center border border-green-500 shadow-[0_0_15px_rgba(16,185,129,0.6)]">
-                    <i class="fas fa-dna text-2xl text-green-400 animate-pulse"></i>
-                </div>
-                <div class="flex flex-col">
-                    <span class="font-sci text-3xl font-bold tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-green-400 to-emerald-400 leading-none">BIO-LAB</span>
-                    <span id="streak-counter" class="text-sm font-sci text-gray-500 font-bold transition-all duration-300">RACHA: x0</span>
-                </div>
-            </div>
-            
-            <div class="flex flex-wrap gap-3 md:gap-6 font-sci text-xl font-semibold text-gray-300">
-                <div class="flex flex-col items-center bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-600 shadow-inner">
-                    <span class="text-[10px] text-green-400 uppercase tracking-widest mb-1"><i class="fas fa-list-ol mr-1"></i> Análisis</span>
-                    <span id="stat-question" class="text-xl text-white font-bold">1/20</span>
-                </div>
-                <div id="score-container" class="flex flex-col items-center bg-slate-800/80 px-4 py-2 rounded-xl border border-slate-600 shadow-inner transition-colors duration-300">
-                    <span class="text-[10px] text-emerald-400 uppercase tracking-widest mb-1"><i class="fas fa-star mr-1"></i> Puntaje</span>
-                    <span id="stat-score" class="text-xl text-white font-bold">0</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- Barra de progreso Global -->
-        <div class="w-full bg-slate-800/80 rounded-full h-2 mb-4 border border-slate-600 overflow-hidden relative shadow-inner">
-            <div id="progress-bar" class="h-full bg-gradient-to-r from-green-500 via-emerald-500 to-cyan-500 transition-all duration-700 ease-out" style="width: 5%"></div>
-        </div>
-
-        <!-- Barra de Tiempo (Presión Dinámica) -->
-        <div class="w-full bg-slate-900 rounded-full h-1.5 mb-6 overflow-hidden shadow-inner shrink-0">
-            <div id="timer-bar" class="h-full bg-green-400 w-full shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-        </div>
-
-        <!-- Contenedor Principal (Pregunta y Opciones) -->
-        <main class="flex-1 flex flex-col max-w-6xl mx-auto w-full gap-6 relative z-10 pb-40 overflow-y-auto no-scrollbar"> 
-            
-            <!-- Pregunta -->
-            <div class="glass-panel p-8 md:p-10 rounded-2xl border-l-4 border-l-green-400 relative shadow-[0_10px_30px_rgba(0,0,0,0.5)] shrink-0">
-                <div id="topic-badge" class="absolute -top-4 left-8 bg-slate-900 border border-green-500 text-green-400 text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest font-sci shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-2">
-                    <i class="fas fa-microscope"></i> <span id="topic-text">Tema</span>
-                </div>
-                <!-- Text Scramble Container -->
-                <h2 id="question-text" class="text-2xl md:text-3xl font-semibold leading-relaxed mt-3 text-white font-inter scramble-text min-h-[80px]">
-                    Iniciando escaneo genético y ambiental...
-                </h2>
-            </div>
-
-            <!-- Opciones -->
-            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-5 flex-1">
-                <!-- Generado por JS -->
-            </div>
-
-        </main>
-    </div>
-
-    <!-- PANTALLA FINAL (RESULTADOS) -->
-    <div id="screen-results" class="screen flex-col items-center justify-center w-full h-full p-4 md:p-8 z-10">
-        <div class="glass-panel p-8 md:p-12 rounded-3xl max-w-5xl w-full flex flex-col items-center text-center overflow-y-auto no-scrollbar max-h-full relative">
-            
-            <div class="absolute inset-0 overflow-hidden rounded-3xl z-[-1] opacity-20 bg-gradient-to-b from-green-600 to-cyan-900 mix-blend-overlay"></div>
-
-            <div class="relative w-32 h-32 mb-4 flex items-center justify-center">
-                <div class="absolute inset-0 border-4 border-dashed border-green-400 rounded-full animate-[spin_10s_linear_infinite]"></div>
-                <i class="fas fa-award text-6xl text-green-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]"></i>
-            </div>
-            
-            <h1 class="text-5xl font-bold font-sci text-white mb-2 tracking-wider drop-shadow-md">ANÁLISIS DE LA BIÓSFERA COMPLETADO</h1>
-            
-            <div id="final-rank" class="text-3xl font-sci text-green-400 mb-8 font-bold bg-slate-900/80 px-8 py-2 rounded-full border border-green-500/50">
-                Calculando rango ecológico...
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full mb-10">
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
-                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-star"></i></div>
-                    <span class="text-green-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Puntaje Final</span>
-                    <span id="final-score" class="text-5xl font-bold text-white z-10">0<span class="text-xl text-gray-500">/200</span></span>
-                </div>
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
-                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-check-double"></i></div>
-                    <span class="text-emerald-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Aciertos</span>
-                    <span id="final-hits" class="text-5xl font-bold text-white z-10">0<span class="text-xl text-gray-500">/20</span></span>
-                </div>
-                <div class="bg-gradient-to-br from-slate-800 to-slate-900 p-6 rounded-2xl border border-slate-600 flex flex-col items-center shadow-lg relative overflow-hidden transition-transform hover:scale-105">
-                    <div class="absolute -right-4 -top-4 text-slate-700 opacity-20 text-6xl"><i class="fas fa-fire"></i></div>
-                    <span class="text-orange-400 font-sci uppercase tracking-widest text-sm mb-2 z-10">Mejor Racha</span>
-                    <span id="final-streak" class="text-5xl font-bold text-white z-10">x0</span>
-                </div>
-            </div>
-
-            <button onclick="location.reload()" onmouseenter="SoundEngine.playHover()" class="mt-4 btn-neon font-sci font-bold text-xl py-4 px-12 rounded-full flex items-center gap-3 group">
-                <i class="fas fa-sync-alt group-hover:rotate-180 transition-transform duration-500"></i> REINICIAR SISTEMA
-            </button>
-        </div>
-    </div>
-
-    <!-- MODAL DE RETROALIMENTACIÓN -->
-    <div id="feedback-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[60] hidden flex-col items-center justify-center p-4">
-        <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div id="modal-glow" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-green-500/20 rounded-full filter blur-[120px] transition-colors duration-500"></div>
-        </div>
-
-        <div id="feedback-panel" class="glass-panel p-8 md:p-10 rounded-2xl max-w-3xl w-full border-t-4 flex flex-col transition-all transform translate-y-12 opacity-0 duration-500 shadow-[0_30px_60px_rgba(0,0,0,0.9)] relative z-10">
-            
-            <div class="flex items-start gap-5 mb-6 border-b border-slate-700/50 pb-5">
-                <div id="feedback-icon" class="text-5xl shrink-0 mt-1"></div>
-                <div class="flex-1">
-                    <p id="feedback-points" class="text-green-400 text-sm mb-1 uppercase tracking-widest font-sci font-bold"></p>
-                    <h3 id="feedback-title" class="text-3xl font-sci font-bold uppercase tracking-wide"></h3>
-                </div>
-            </div>
-
-            <div class="mb-6">
-                <div class="bg-slate-900/60 p-4 rounded-xl border-l-4 border-slate-500 mb-5 font-inter">
-                    <p class="text-xs text-gray-400 uppercase tracking-wider font-sci mb-1">Tu selección:</p>
-                    <p id="feedback-selected" class="text-md text-white font-medium italic"></p>
-                </div>
+            useEffect(() => {
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                let animId;
+                let w = canvas.width = window.innerWidth;
+                let h = canvas.height = window.innerHeight;
                 
-                <div class="relative pl-4 border-l-2 border-slate-600/50">
-                    <p id="feedback-explanation" class="text-lg md:text-xl leading-relaxed text-gray-300 font-inter font-light">
-                        Explicación detallada...
-                    </p>
-                </div>
-            </div>
+                const handleResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+                window.addEventListener('resize', handleResize);
 
-            <button onclick="nextQuestion()" onmouseenter="SoundEngine.playHover()" id="btn-continue" class="self-end bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-sci font-bold text-xl py-3 px-8 rounded-full transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] hover:shadow-[0_0_25px_rgba(16,185,129,0.8)] hover:scale-105 flex items-center gap-2 group">
-            CONTINUAR <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
-        </button>
-    </div>
-</div>
-
-<script>
-    function initNativeBackground() {
-        const canvas = document.getElementById('dna-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        let time = 0;
-        // Bases del ADN representativas de la Biodiversidad
-        const elements = ['A', 'C', 'T', 'G'];
-        const floatingParticles = Array.from({length: 45}).map(() => ({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            speed: 0.2 + Math.random() * 0.4,
-            char: elements[Math.floor(Math.random() * elements.length)],
-            size: 16 + Math.random() * 20,
-            opacity: 0.05 + Math.random() * 0.15
-        }));
-
-        function drawConnections(xOffset, h, amplitude, freq, speed, opacityScale, color1, color2) {
-            ctx.lineWidth = 1;
-            const yStep = 35;
-            for(let y = -50; y < h + 50; y += yStep) {
-                const phase = y * freq + time * speed;
-                const z1 = Math.cos(phase);
-                const z2 = Math.cos(phase + Math.PI);
+                const symbols = ['🌿', '🧬', '🌍', 'H₂O', 'O₂', 'Eco', 'Bio', 'Diversidad', 'Gen'];
+                const colors = ['#10b981', '#34d399', '#059669', '#fbbf24', '#38bdf8'];
                 
-                const x1 = xOffset + Math.sin(phase) * amplitude;
-                const x2 = xOffset + Math.sin(phase + Math.PI) * amplitude;
+                const particles = Array.from({ length: 60 }).map(() => ({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    r: Math.random() * 4 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    text: Math.random() > 0.75 ? symbols[Math.floor(Math.random() * symbols.length)] : null,
+                    pulse: Math.random() * Math.PI * 2
+                }));
+
+                const draw = () => {
+                    ctx.clearRect(0, 0, w, h);
+                    
+                    for (let i = 0; i < particles.length; i++) {
+                        for (let j = i + 1; j < particles.length; j++) {
+                            const dx = particles[i].x - particles[j].x;
+                            const dy = particles[i].y - particles[j].y;
+                            const dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist < 120) {
+                                ctx.beginPath();
+                                ctx.moveTo(particles[i].x, particles[i].y);
+                                ctx.lineTo(particles[j].x, particles[j].y);
+                                ctx.strokeStyle = particles[i].color;
+                                ctx.globalAlpha = 0.1 * (1 - dist/120);
+                                ctx.stroke();
+                            }
+                        }
+                    }
+
+                    particles.forEach(p => {
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        p.pulse += 0.03;
+
+                        if (p.x < 0 || p.x > w) p.vx *= -1;
+                        if (p.y < 0 || p.y > h) p.vy *= -1;
+
+                        ctx.globalAlpha = 0.3 + Math.sin(p.pulse) * 0.3;
+                        
+                        if (p.text) {
+                            ctx.font = 'bold 18px "JetBrains Mono"';
+                            ctx.fillStyle = p.color;
+                            ctx.textAlign = 'center';
+                            ctx.fillText(p.text, p.x, p.y);
+                        } else {
+                            ctx.beginPath();
+                            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                            ctx.fillStyle = p.color;
+                            ctx.fill();
+                        }
+                    });
+                    
+                    ctx.globalAlpha = 1;
+                    animId = requestAnimationFrame(draw);
+                };
+                draw();
+                return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', handleResize); };
+            }, []);
+
+            return <canvas ref={canvasRef} className="absolute inset-0 z-0 pointer-events-none opacity-60" />;
+        };
+
+        const BioSimulation3D = ({ simRef }) => {
+            const mountRef = useRef(null);
+
+            useEffect(() => {
+                if (!mountRef.current) return;
                 
-                const r1 = 3 + (z1 + 1) * 2;
-                const r2 = 3 + (z2 + 1) * 2;
+                const scene = new THREE.Scene(); 
+                scene.fog = new THREE.FogExp2(0x020b06, 0.012);
                 
-                const op1 = opacityScale * (0.4 + (z1 + 1) * 0.3);
-                const op2 = opacityScale * (0.4 + (z2 + 1) * 0.3);
-
-                ctx.beginPath();
-                ctx.moveTo(x1, y);
-                ctx.lineTo(x2, y);
-                ctx.strokeStyle = `rgba(16, 185, 129, ${opacityScale * 0.2 * Math.abs(Math.sin(phase))})`;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(x1, y, r1, 0, Math.PI * 2);
-                ctx.fillStyle = color1;
-                ctx.globalAlpha = op1;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = color1;
-                ctx.fill();
-
-                ctx.beginPath();
-                ctx.arc(x2, y, r2, 0, Math.PI * 2);
-                ctx.fillStyle = color2;
-                ctx.globalAlpha = op2;
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = color2;
-                ctx.fill();
+                const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+                camera.position.set(25, 15, 35); 
                 
-                ctx.globalAlpha = 1; 
-                ctx.shadowBlur = 0;
-            }
-        }
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+                mountRef.current.appendChild(renderer.domElement);
 
-        function animate() {
-            ctx.clearRect(0, 0, width, height);
+                scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+                
+                const colorNormal = new THREE.Color(0x10b981); // Emerald
+                const colorAlert = new THREE.Color(0xf43f5e);  // Red
+                let currentColor = colorNormal.clone();
+
+                const MAX_NODES = 250;
+                let activeNodes = 100;
+                let connectionThreshold = 18;
+                let simSpeed = 1.0;
+
+                const nodesGeometry = new THREE.BufferGeometry();
+                const positions = new Float32Array(MAX_NODES * 3);
+                const velocities = [];
+
+                for (let i = 0; i < MAX_NODES; i++) {
+                    const r = 18;
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi = Math.acos((Math.random() * 2) - 1);
+                    
+                    positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+                    positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
+                    positions[i * 3 + 2] = r * Math.cos(phi);
+
+                    velocities.push(new THREE.Vector3(
+                        (Math.random() - 0.5) * 0.1,
+                        (Math.random() - 0.5) * 0.1,
+                        (Math.random() - 0.5) * 0.1
+                    ));
+                }
+
+                nodesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                nodesGeometry.setDrawRange(0, activeNodes);
+
+                const materialSphere = new THREE.PointsMaterial({
+                    color: currentColor,
+                    size: 1.2,
+                    transparent: true,
+                    opacity: 0.9,
+                    sizeAttenuation: true
+                });
+                
+                const pointCloud = new THREE.Points(nodesGeometry, materialSphere);
+                scene.add(pointCloud);
+
+                // Lines structure
+                const linesGeometry = new THREE.BufferGeometry();
+                const maxLines = (MAX_NODES * (MAX_NODES - 1)) / 2;
+                const linePositions = new Float32Array(maxLines * 6);
+                linesGeometry.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+                
+                const lineMaterial = new THREE.LineBasicMaterial({
+                    color: currentColor,
+                    transparent: true,
+                    opacity: 0.25
+                });
+                const linesMesh = new THREE.LineSegments(linesGeometry, lineMaterial);
+                scene.add(linesMesh);
+
+                let mouseX = 0, mouseY = 0;
+                const handleMouseMove = (e) => { 
+                    mouseX = ((e.clientX / window.innerWidth) * 2 - 1) * 8; 
+                    mouseY = ((e.clientY / window.innerHeight) * 2 - 1) * 8; 
+                };
+                document.addEventListener('mousemove', handleMouseMove);
+                
+                const handleResize = () => { 
+                    camera.aspect = window.innerWidth / window.innerHeight; 
+                    camera.updateProjectionMatrix(); 
+                    renderer.setSize(window.innerWidth, window.innerHeight); 
+                };
+                window.addEventListener('resize', handleResize);
+
+                simRef.current = {
+                    setSimState: (opts) => {
+                        if (opts.nodes !== undefined) {
+                            activeNodes = Math.min(MAX_NODES, Math.max(10, opts.nodes));
+                            nodesGeometry.setDrawRange(0, activeNodes);
+                        }
+                        if (opts.connectDist !== undefined) connectionThreshold = opts.connectDist;
+                        if (opts.speed !== undefined) simSpeed = opts.speed;
+                        if (opts.colorAlert !== undefined) {
+                            const targetC = opts.colorAlert ? colorAlert : colorNormal;
+                            gsap.to(currentColor, { r: targetC.r, g: targetC.g, b: targetC.b, duration: 1.5, onUpdate: () => {
+                                materialSphere.color.copy(currentColor);
+                                lineMaterial.color.copy(currentColor);
+                            }});
+                        }
+                    },
+                    setMode: (m) => {
+                        if(m === 'center') gsap.to(camera.position, { x: 0, y: 0, z: 40, duration: 2, ease: "power2.out" });
+                        else gsap.to(camera.position, { x: 25, y: 15, z: 35, duration: 2, ease: "power2.out" });
+                    }
+                };
+
+                let animId;
+                const anim = () => {
+                    animId = requestAnimationFrame(anim);
+                    
+                    const time = Date.now() * 0.0005;
+                    camera.position.x += (mouseX + Math.sin(time)*4 - camera.position.x) * 0.02;
+                    camera.position.y += (-mouseY - camera.position.y) * 0.02;
+                    camera.lookAt(0,0,0);
+
+                    const posAttr = nodesGeometry.attributes.position;
+                    let lineIndex = 0;
+
+                    for (let i = 0; i < activeNodes; i++) {
+                        let vx = velocities[i].x * simSpeed;
+                        let vy = velocities[i].y * simSpeed;
+                        let vz = velocities[i].z * simSpeed;
+
+                        let px = posAttr.getX(i) + vx;
+                        let py = posAttr.getY(i) + vy;
+                        let pz = posAttr.getZ(i) + vz;
+
+                        // Soft boundary constraints (Spherical)
+                        const distToCenter = Math.sqrt(px*px + py*py + pz*pz);
+                        if (distToCenter > 22) {
+                            velocities[i].x -= (px / distToCenter) * 0.02;
+                            velocities[i].y -= (py / distToCenter) * 0.02;
+                            velocities[i].z -= (pz / distToCenter) * 0.02;
+                        }
+
+                        posAttr.setXYZ(i, px, py, pz);
+
+                        // Calculate Connections
+                        for (let j = i + 1; j < activeNodes; j++) {
+                            const px2 = posAttr.getX(j);
+                            const py2 = posAttr.getY(j);
+                            const pz2 = posAttr.getZ(j);
+
+                            const distSq = (px-px2)**2 + (py-py2)**2 + (pz-pz2)**2;
+                            if (distSq < connectionThreshold * connectionThreshold) {
+                                linePositions[lineIndex++] = px;
+                                linePositions[lineIndex++] = py;
+                                linePositions[lineIndex++] = pz;
+                                linePositions[lineIndex++] = px2;
+                                linePositions[lineIndex++] = py2;
+                                linePositions[lineIndex++] = pz2;
+                            }
+                        }
+                    }
+
+                    posAttr.needsUpdate = true;
+                    linesGeometry.setDrawRange(0, lineIndex / 3);
+                    linesGeometry.attributes.position.needsUpdate = true;
+                    
+                    pointCloud.rotation.y += 0.001 * simSpeed;
+                    linesMesh.rotation.y += 0.001 * simSpeed;
+
+                    renderer.render(scene, camera);
+                };
+                anim();
+
+                return () => {
+                    cancelAnimationFrame(animId);
+                    window.removeEventListener('resize', handleResize);
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    if (mountRef.current) mountRef.current.innerHTML = '';
+                };
+            }, []);
+
+            return <div ref={mountRef} id="three-container" />;
+        };
+
+        const ProfeBot = ({ color = '#10b981', mood = 'idle', className="w-full h-full" }) => {
+            let animClass = '';
+            if (mood === 'celebrate' || mood === 'happy') animClass = 'animate-robot-celebrate';
+            else if (mood === 'sad') animClass = 'animate-robot-sad';
+            else if (mood === 'thinking') animClass = 'animate-robot-think';
+            const orbColor = (mood === 'celebrate' || mood === 'happy') ? '#34d399' : (mood === 'sad' ? '#ef4444' : color);
+
+            return (
+                <svg viewBox="0 0 100 100" className={`${className} ${animClass}`} style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.6))' }}>
+                    <defs>
+                        <radialGradient id={`glow-${color.replace('#','')}`} cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stopColor="#fff" stopOpacity="1" />
+                            <stop offset="40%" stopColor={orbColor} stopOpacity="0.8" />
+                            <stop offset="100%" stopColor={orbColor} stopOpacity="0" />
+                        </radialGradient>
+                    </defs>
+                    {/* Antenna */}
+                    <rect x="47" y="10" width="6" height="14" rx="3" fill="#94a3b8" />
+                    <circle cx="50" cy="11" r="14" fill={`url(#glow-${color.replace('#','')})`} />
+                    <circle cx="50" cy="11" r="6.5" fill={orbColor} />
+                    <circle cx="48" cy="9" r="2.5" fill="#fff" />
+                    {/* Ears */}
+                    <rect x="8" y="32" width="16" height="9" rx="4.5" fill="#cbd5e1" stroke="#475569" strokeWidth="2.5" transform="rotate(-32 16 36)" />
+                    <rect x="76" y="32" width="16" height="9" rx="4.5" fill="#cbd5e1" stroke="#475569" strokeWidth="2.5" transform="rotate(32 84 36)" />
+                    {/* Head */}
+                    <rect x="18" y="22" width="64" height="64" rx="22" fill="#e2e8f0" stroke="#475569" strokeWidth="2.5" />
+                    <rect x="21" y="25" width="58" height="58" rx="19" fill="#f8fafc" />
+                    {/* Screen */}
+                    <rect x="27" y="31" width="46" height="46" rx="14" fill="#022c22" stroke="#064e3b" strokeWidth="2" />
+                    
+                    {/* Expressions */}
+                    {(mood === 'idle' || mood === 'happy' || mood === 'celebrate') && (
+                        <g>
+                            <path d="M 33 49 A 6 6 0 0 1 45 49 Z" fill={color} />
+                            <path d="M 55 49 A 6 6 0 0 1 67 49 Z" fill={color} />
+                            <circle cx="34" cy="56" r="2.8" fill="#f43f5e" opacity="0.6" />
+                            <circle cx="66" cy="56" r="2.8" fill="#f43f5e" opacity="0.6" />
+                            <path d="M 37 56 Q 50 75 63 56 Z" fill="#ff6b81" />
+                        </g>
+                    )}
+                    {mood === 'sad' && (
+                        <g>
+                            <path d="M 34 45 L 44 53 M 44 45 L 34 53" stroke={color} strokeWidth="3" strokeLinecap="round" />
+                            <path d="M 56 45 L 66 53 M 66 45 L 56 53" stroke={color} strokeWidth="3" strokeLinecap="round" />
+                            <path d="M 40 67 Q 50 58 60 67" stroke="#ff6b81" strokeWidth="3" strokeLinecap="round" fill="none" />
+                        </g>
+                    )}
+                    {mood === 'thinking' && (
+                        <g>
+                            <circle cx="39" cy="48" r="5" fill={color} />
+                            <circle cx="41" cy="46" r="2" fill="#fff" />
+                            <circle cx="61" cy="48" r="5" fill={color} />
+                            <circle cx="63" cy="46" r="2" fill="#fff" />
+                            <circle cx="50" cy="64" r="3.5" fill="#ff6b81" />
+                        </g>
+                    )}
+                </svg>
+            );
+        };
+
+        function App() {
+            const [screen, setScreen] = useState('START'); 
+            const [score, setScore] = useState(0);           
+            const [currentExScore, setCurrentExScore] = useState(100); 
             
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            floatingParticles.forEach(p => {
-                ctx.fillStyle = `rgba(16, 185, 129, ${p.opacity})`;
-                ctx.font = `bold ${p.size}px 'Rajdhani', sans-serif`;
-                ctx.fillText(p.char, p.x, p.y);
-                p.y -= p.speed;
-                if(p.y < -50) p.y = height + 50;
-            });
-
-            drawConnections(width * 0.15, height, 50, 0.015, 0.01, 0.4, '#10b981', '#34d399');
-            drawConnections(width * 0.85, height, 60, 0.012, 0.015, 0.3, '#34d399', '#059669');
-            drawConnections(width * 0.5, height, 150, 0.008, 0.008, 0.7, '#10b981', '#06b6d4');
-
-            time += 1;
-            requestAnimationFrame(animate);
-        }
-        animate();
-    }
-    initNativeBackground();
-
-    const SoundEngine = {
-        synth: null,       
-        hoverSynth: null,  
-        clickSynth: null,  
-        tickSynth: null,   
-        
-        init: async function() {
-            await Tone.start();
+            const [exIndex, setExIndex] = useState(0);       
+            const [highestUnlockedEx, setHighestUnlockedEx] = useState(0); 
+            const [stepIndex, setStepIndex] = useState(0);
             
-            this.synth = new Tone.PolySynth(Tone.Synth).toDestination();
-            this.synth.volume.value = -12; 
-            
-            this.hoverSynth = new Tone.Synth({
-                oscillator: { type: "sine" },
-                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
-            }).toDestination();
-            this.hoverSynth.volume.value = -20;
-            
-            this.clickSynth = new Tone.MembraneSynth().toDestination();
-            this.clickSynth.volume.value = -15;
+            const [collectedData, setCollectedData] = useState({});
+            const [boardState, setBoardState] = useState('init'); 
+            const [feedback, setFeedback] = useState(null);
+            const [isMuted, setIsMuted] = useState(false);
+            const [robotMood, setRobotMood] = useState('idle');
 
-            this.tickSynth = new Tone.MetalSynth({
-                frequency: 200, envelope: { attack: 0.001, decay: 0.1, release: 0.01 },
-                harmonicity: 5.1, modulationIndex: 32, resonance: 4000, octaves: 1.5
-            }).toDestination();
-            this.tickSynth.volume.value = -25;
-        },
-        playHover: function() {
-            if(this.hoverSynth && Tone.context.state === 'running') {
-                this.hoverSynth.triggerAttackRelease("C6", "32n");
-            }
-        },
-        playClick: function() {
-            if(this.clickSynth && Tone.context.state === 'running') {
-                this.clickSynth.triggerAttackRelease("C3", "16n");
-            }
-        },
-        playTick: function() {
-            if(this.tickSynth && Tone.context.state === 'running') {
-                this.tickSynth.triggerAttackRelease("32n");
-            }
-        },
-        playCorrect: function() {
-            if(!this.synth) return;
-            const now = Tone.now();
-            this.synth.triggerAttackRelease("C5", "16n", now);
-            this.synth.triggerAttackRelease("E5", "16n", now + 0.1);
-            this.synth.triggerAttackRelease("G5", "8n", now + 0.2);
-        },
-        playIncorrect: function() {
-            if(!this.synth) return;
-            const now = Tone.now();
-            this.synth.triggerAttackRelease("D4", "8n", now);
-            this.synth.triggerAttackRelease("A3", "4n", now + 0.15);
-        },
-        playCombo: function() {
-            if(!this.synth) return;
-            const now = Tone.now();
-            this.synth.triggerAttackRelease("C5", "16n", now);
-            this.synth.triggerAttackRelease("G5", "16n", now + 0.1);
-            this.synth.triggerAttackRelease("C6", "8n", now + 0.2);
-            this.synth.triggerAttackRelease("E6", "4n", now + 0.3);
-        }
-    };
+            const [shuffledOptions, setShuffledOptions] = useState([]);
 
-    function fireConfetti(isCombo = false) {
-        var duration = isCombo ? 4000 : 2000;
-        var end = Date.now() + duration;
-        var colors = isCombo ? ['#f97316', '#eab308', '#ef4444'] : ['#10b981', '#34d399', '#06b6d4'];
+            const simRef = useRef(null);
+            const currentEx = ExercisesDB[exIndex];
+            const currentStep = currentEx ? currentEx.steps[stepIndex] : null;
 
-        (function frame() {
-            confetti({ particleCount: isCombo? 5 : 3, angle: 60, spread: 55, origin: { x: 0 }, colors: colors, zIndex: 1000 });
-            confetti({ particleCount: isCombo? 5 : 3, angle: 120, spread: 55, origin: { x: 1 }, colors: colors, zIndex: 1000 });
-            if (Date.now() < end) requestAnimationFrame(frame);
-        }());
-    }
+            useEffect(() => { SoundEngine.init(); }, []);
 
-    function scrambleText(element, finalString, duration = 800) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*';
-        let start = Date.now();
-        element.classList.add('text-green-400');
-        
-        let interval = setInterval(() => {
-            let elapsed = Date.now() - start;
-            if (elapsed > duration) {
-                clearInterval(interval);
-                element.innerHTML = finalString;
-                element.classList.remove('text-green-400');
-                return;
-            }
-            element.innerHTML = finalString.split('').map(char => {
-                if (char === ' ' || char === '?' || char === '¿' || char === ',') return char;
-                return Math.random() > (elapsed / duration) ? chars[Math.floor(Math.random() * chars.length)] : char;
-            }).join('');
-        }, 30);
-    }
+            useEffect(() => {
+                if (currentStep && boardState === 'init') {
+                    const optionsObj = currentStep.opts.map((opt, idx) => ({ text: opt, isCorrect: idx === currentStep.ans }));
+                    for (let i = optionsObj.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [optionsObj[i], optionsObj[j]] = [optionsObj[j], optionsObj[i]];
+                    }
+                    setShuffledOptions(optionsObj);
+                }
+            }, [currentStep, boardState]);
 
-    const evoBot = {
-        element: document.getElementById('speech-bubble'),
-        eyes: document.getElementById('robot-eyes'),
-        say: function(text, type = 'normal', duration = 5000) {
-            this.element.innerHTML = text;
-            this.element.classList.add('active');
-            
-            const colors = { 'correct': '#10b981', 'error': '#ef4444', 'combo': '#f97316', 'normal': '#10b981' };
-            const color = colors[type];
-            
-            this.element.style.borderColor = color;
-            this.element.style.boxShadow = `0 0 20px ${color}66`;
-            this.eyes.querySelectorAll('.robot-eye').forEach(eye => {
-                eye.setAttribute('fill', color);
-                eye.style.boxShadow = `0 0 10px ${color}`;
-            });
+            const toggleMute = () => { setIsMuted(!isMuted); SoundEngine.toggleMute(!isMuted); };
 
-            if(this.hideTimeout) clearTimeout(this.hideTimeout);
-            if(duration > 0) {
-                this.hideTimeout = setTimeout(() => {
-                    this.element.classList.remove('active');
-                    this.eyes.querySelectorAll('.robot-eye').forEach(eye => eye.setAttribute('fill', '#10b981'));
-                }, duration);
-            }
-        },
-        poke: function() {
-            const phrases = [
-                "¿Sabías que un ecosistema diverso tiene mucha mayor resistencia ante los desastres naturales?",
-                "Analizando redes tróficas... Eres un espécimen fascinante.",
-                "La adaptación es la clave. Mantén tu atención alta para evolucionar en el juego."
-            ];
-            this.say(`<i class="fas fa-info-circle mr-2"></i> ${phrases[Math.floor(Math.random() * phrases.length)]}`, 'normal', 4000);
-            SoundEngine.playHover();
-        }
-    };
+            const goToMap = () => {
+                setScreen('MAP');
+                setRobotMood('idle');
+                if (simRef.current) simRef.current.setMode('isometric');
+            };
 
-    const questionsDB = [
-        { topic: "Origen de la Vida", level: "Básico", question: "¿Qué factor principal ha permitido la enorme riqueza biológica y diversidad de formas de vida en la Tierra?", options: [ { text: "A) Los diferentes factores ambientales a los que las especies se han adaptado.", isCorrect: true, feedback: "Correcto. La adaptación continua a los distintos ambientes del planeta es la base de la inmensa diversidad biológica." }, { text: "B) La intervención exclusiva y continua de la selección artificial humana.", isCorrect: false, feedback: "La selección artificial es reciente y exclusiva de los humanos, no el origen de toda la vida." }, { text: "C) La ausencia de cambios climáticos durante millones de años en el planeta.", isCorrect: false, feedback: "Al contrario, los cambios ambientales han impulsado la evolución y adaptación de las especies." }, { text: "D) La uniformidad estricta de los ecosistemas en todos los continentes del mundo.", isCorrect: false, feedback: "El planeta se caracteriza por tener ambientes muy variados y dinámicos, no uniformes." } ] },
-        
-        { topic: "Intervención Humana", level: "Intermedio", question: "¿A qué proceso se refiere el aprovechamiento humano de la variabilidad genética para domesticar especies?", options: [ { text: "A) Evolución natural del ecosistema", isCorrect: false, feedback: "La evolución natural ocurre de manera espontánea sin la intervención dirigida por el ser humano." }, { text: "B) Selección artificial de especies", isCorrect: true, feedback: "Exacto. Los humanos hemos aprovechado la variabilidad genética seleccionando rasgos deseables en plantas y animales." }, { text: "C) Mutación espontánea del ADN", isCorrect: false, feedback: "Las mutaciones son cambios aleatorios a nivel genético, no el proceso organizado de domesticación." }, { text: "D) Adaptación pasiva al medio ambiente", isCorrect: false, feedback: "La adaptación pasiva es natural de los seres vivos, no un aprovechamiento activo por parte del hombre." } ] },
-        
-        { topic: "Concepto Principal", level: "Básico", question: "¿Qué concepto engloba toda la diversidad de formas de vida en la Tierra, incluyendo genes, especies y ecosistemas?", options: [ { text: "A) Bioma terrestre", isCorrect: false, feedback: "Un bioma es un área biogeográfica específica, no engloba toda la diversidad a nivel global en todos sus niveles." }, { text: "B) Biósfera del planeta", isCorrect: false, feedback: "La biósfera es la capa del planeta donde hay vida, pero el concepto organizativo que buscamos es otro." }, { text: "C) Biodiversidad o diversidad biológica", isCorrect: true, feedback: "La biodiversidad engloba absolutamente toda la variedad de formas de vida procedentes de cualquier fuente." }, { text: "D) Ecología ambiental", isCorrect: false, feedback: "La ecología es la ciencia biológica que estudia las interacciones, no la diversidad en sí misma." } ] },
-        
-        { topic: "Organización", level: "Básico", question: "¿Cuáles son los tres niveles principales en los que suele considerarse la biodiversidad?", options: [ { text: "A) Celular, individual y poblacional.", isCorrect: false, feedback: "Estos corresponden a niveles de organización biológica anatómica, pero no a los tres pilares de la biodiversidad." }, { text: "B) Especies, genética y ecosistemas.", isCorrect: true, feedback: "El video explica que estos tres niveles abarcan de manera integral desde los genes individuales hasta los hábitats completos." }, { text: "C) Terrestre, acuático y atmosférico.", isCorrect: false, feedback: "Esos representan tipos de hábitats físicos o medios, no los niveles de clasificación de la biodiversidad." }, { text: "D) Microorganismos, plantas y animales.", isCorrect: false, feedback: "Estos son reinos o grupos taxonómicos, los cuales se encuentran englobados únicamente dentro del nivel de 'especies'." } ] },
-        
-        { topic: "Nivel 1: Especies", level: "Intermedio", question: "¿A qué se refiere el nivel de biodiversidad 'de especies'?", options: [ { text: "A) A las diferencias en las secuencias de ADN dentro de una misma población.", isCorrect: false, feedback: "Ese concepto pertenece estrictamente al nivel de la biodiversidad genética intrapoblacional." }, { text: "B) A la inmensa variedad de ecosistemas presentes en un país o región determinada.", isCorrect: false, feedback: "Eso describe claramente a la biodiversidad del tercer nivel (ecosistemas)." }, { text: "C) A la gama de tipos de seres vivos existentes, desde bacterias hasta plantas y hongos.", isCorrect: true, feedback: "Incluye la inmensa variedad de organismos, producto de diferencias morfológicas, fisiológicas y genéticas." }, { text: "D) A la capacidad exclusiva de los seres humanos para domesticar nuevos tipos de cultivos.", isCorrect: false, feedback: "Ese es un ejemplo de la acción humana mediante selección artificial, no la definición del nivel biológico de especies." } ] },
-        
-        { topic: "Biología Moderna", level: "Avanzado", question: "Según el video, ¿qué herramienta de la biología moderna nos permite diferenciar organismos aparentemente similares?", options: [ { text: "A) El estudio profundo de sus secuencias de ADN.", isCorrect: true, feedback: "Gracias a la genética moderna (secuencias de ADN), hoy diferenciamos organismos (como bacterias) que a simple vista parecen idénticos." }, { text: "B) La observación continua de su comportamiento en cautiverio.", isCorrect: false, feedback: "El comportamiento no siempre refleja las diferencias genéticas profundas, especialmente en organismos microscópicos." }, { text: "C) El análisis comparativo de sus fósiles en capas geológicas.", isCorrect: false, feedback: "La paleontología ayuda a entender el pasado, pero el video destaca directamente a la biología molecular y genética." }, { text: "D) La medición rigurosa de su tamaño corporal y peso promedio.", isCorrect: false, feedback: "El tamaño es altamente variable (fenotipo) y no es el método definitivo para diferenciar cepas crípticas." } ] },
-        
-        { topic: "Nivel 2: Genética", level: "Avanzado", question: "¿Qué ventaja principal otorga la 'biodiversidad genética' a los individuos de una misma especie?", options: [ { text: "A) Les permite formar biomas y ecosistemas completamente nuevos sin intervención de terceros.", isCorrect: false, feedback: "Un ecosistema está formado por múltiples especies interconectadas, no por las variaciones genéticas de una sola." }, { text: "B) Les permite adaptarse a los cambios ambientales, variaciones de radiación o nuevas enfermedades.", isCorrect: true, feedback: "La variabilidad genética es la póliza de seguro de una especie para poder sobrevivir y adaptarse a nuevas presiones o amenazas." }, { text: "C) Garantiza biológicamente que todos los individuos de la especie sean exactamente idénticos.", isCorrect: false, feedback: "Al contrario, su propósito evolutivo es asegurar que los individuos tengan características, propiedades y resistencias diferentes." }, { text: "D) Evita por completo y de manera natural que la especie sufra cualquier tipo de extinción o depredación.", isCorrect: false, feedback: "Ninguna característica biológica evita la depredación al 100%, pero sí brinda herramientas evolutivas para la supervivencia a largo plazo." } ] },
-        
-        { topic: "Nivel 3: Ecosistemas", level: "Intermedio", question: "¿Cómo se define el nivel de biodiversidad de 'ecosistemas'?", options: [ { text: "A) Como el conjunto de características físicas y fisiológicas de una sola especie vegetal o animal.", isCorrect: false, feedback: "Eso se relaciona más con la diversidad genética y las propiedades de las especies individuales." }, { text: "B) Como el conjunto de individuos de diferentes especies que viven en una zona e interactúan entre sí.", isCorrect: true, feedback: "Involucra a múltiples formas de vida (comunidad biológica) conviviendo y sus intercambios naturales con el medio físico." }, { text: "C) Como el número total de genes presentes exclusivamente dentro de las selvas y bosques tropicales húmedos.", isCorrect: false, feedback: "La biodiversidad de ecosistemas se encuentra en cualquier bioma (desiertos, océanos, tundras), no solo en los bosques." }, { text: "D) Como la inmensa cantidad de animales que han sido domesticados por el hombre a lo largo de la historia.", isCorrect: false, feedback: "La suma de la domesticación representa una porción diminuta comparada con el funcionamiento de un ecosistema salvaje completo." } ] },
-        
-        { topic: "Geografía", level: "Intermedio", question: "¿Cuántos países en todo el mundo han sido clasificados formalmente como 'megadiversos'?", options: [ { text: "A) Únicamente 10 países en total", isCorrect: false, feedback: "Es un número un poco más elevado que engloba naciones de varios continentes." }, { text: "B) Exactamente 17 países clasificados", isCorrect: true, feedback: "Efectivamente, son 17 los países selectos que albergan la inmensa mayoría de la biodiversidad global en sus territorios." }, { text: "C) Alrededor de 25 países", isCorrect: false, feedback: "El grupo de países megadiversos es más restringido y específico que eso." }, { text: "D) Un aproximado de 50 países", isCorrect: false, feedback: "Esta cantidad representaría a casi un cuarto del planeta, lo cual diluye el concepto de megadiversidad concentrada." } ] },
-        
-        { topic: "Megadiversidad", level: "Básico", question: "¿Qué porcentaje aproximado de la diversidad biológica mundial poseen los países megadiversos?", options: [ { text: "A) Cerca del 50% de la diversidad global", isCorrect: false, feedback: "Estos países poseen una cifra de concentración biológica aún más impresionante." }, { text: "B) Cerca del 70% de la diversidad mundial", isCorrect: true, feedback: "A pesar de ser únicamente 17 naciones, concentran alrededor del 70% de la riqueza natural y especies del globo." }, { text: "C) Aproximadamente el 90% de las especies", isCorrect: false, feedback: "Es un porcentaje excesivamente alto, puesto que el resto del mundo también posee ecosistemas y especies únicas." }, { text: "D) La totalidad absoluta, es decir el 100%", isCorrect: false, feedback: "La vida y la biodiversidad están repartidas por todo el globo, ningún grupo de países tiene la totalidad absoluta de las especies." } ] },
-        
-        { topic: "Características", level: "Intermedio", question: "¿Cuál de las siguientes NO es una característica típica de los países considerados megadiversos?", options: [ { text: "A) Su ubicación geográfica cercana a las regiones tropicales del planeta.", isCorrect: false, feedback: "Estar en latitudes tropicales sí es una característica muy común de estos países por el clima favorable." }, { text: "B) La presencia de un territorio soberano de gran tamaño geográfico.", isCorrect: false, feedback: "Tener un gran tamaño territorial sí suele ser un factor que les permite albergar más hábitats y nichos." }, { text: "C) Estar conformados por paisajes exclusivamente áridos y desérticos.", isCorrect: true, feedback: "Al contrario de esto, se caracterizan fuertemente por poseer una enorme diversidad de paisajes (selvas, bosques, montañas, etc.)." }, { text: "D) Poseer una alta diversidad de paisajes como selvas húmedas, montañas y costas.", isCorrect: false, feedback: "Esta es una característica primordial que permite la existencia de innumerables ecosistemas en los países megadiversos." } ] },
-        
-        { topic: "Importancia Vital", level: "Intermedio", question: "¿Por qué es fundamental la conservación de la biodiversidad para el planeta Tierra?", options: [ { text: "A) Porque garantiza biológicamente el equilibrio de todos los ecosistemas del mundo.", isCorrect: true, feedback: "La vasta diversidad de especies es directamente responsable del funcionamiento correcto de las interacciones naturales esenciales para la vida." }, { text: "B) Porque permite a los seres humanos controlar meteorológicamente el clima de todas las regiones.", isCorrect: false, feedback: "El clima del planeta depende de múltiples factores astronómicos y geológicos, no es algo 'controlable' artificialmente por la biodiversidad." }, { text: "C) Porque asegura permanentemente que ninguna especie biológica volverá a extinguirse jamás.", isCorrect: false, feedback: "La extinción es un proceso natural y evolutivo que continuará, aunque la acción humana hoy la haya acelerado peligrosamente." }, { text: "D) Porque detiene de forma definitiva el proceso natural de la evolución biológica.", isCorrect: false, feedback: "Es justamente todo lo contrario, la biodiversidad constante es el motor principal y el resultado histórico de la evolución biológica." } ] },
-        
-        { topic: "Riesgos", level: "Básico", question: "Irónicamente, según el documental, ¿cuál es la principal amenaza actual para la biodiversidad del planeta?", options: [ { text: "A) La caída inesperada de meteoritos celestes", isCorrect: false, feedback: "Este tipo de eventos ocurrió en el pasado geológico profundo, pero no es de ninguna manera la amenaza diaria actual." }, { text: "B) Las fuertes erupciones volcánicas continuas", isCorrect: false, feedback: "Son fenómenos naturales cuyos impactos suelen ser muy locales o temporales, de los cuales la naturaleza se recupera." }, { text: "C) La agresiva acción humana sobre el medio", isCorrect: true, feedback: "A través de procesos masivos como la deforestación, cambios de ecosistemas e incendios, la humanidad se ha convertido en la principal amenaza." }, { text: "D) Las glaciaciones naturales y prolongadas", isCorrect: false, feedback: "No nos encontramos actualmente inmersos en un evento prolongado de glaciación natural que esté extinguiendo la vida masivamente." } ] },
-        
-        { topic: "Redes Ecológicas", level: "Avanzado", question: "¿Qué ocurre ecológica y sistémicamente cuando una especie se extingue del medio?", options: [ { text: "A) Absolutamente nada, el ecosistema mantiene su forma y funciones exactamente iguales.", isCorrect: false, feedback: "Las especies se encuentran profundamente interconectadas, por lo que su ausencia y desaparición siempre tiene un impacto real." }, { text: "B) Otra especie idéntica aparece casi inmediatamente por procesos de mutación espontánea.", isCorrect: false, feedback: "La evolución biológica toma millones de años en actuar, las especies no se reemplazan unas a otras instantáneamente." }, { text: "C) Deja un peligroso hueco en la red de funcionamiento que termina afectando a todas las demás.", isCorrect: true, feedback: "Su ausencia daña severamente la red de relaciones; afecta a unas especies más directamente que a otras, pero a fin de cuentas afecta a todas." }, { text: "D) Los niveles globales de oxígeno del planeta disminuyen de manera drástica y catastrófica.", isCorrect: false, feedback: "Eso dependería específicamente del tipo de especie (ej: fitoplancton), pero no es el efecto general en todas las extinciones registradas." } ] },
-        
-        { topic: "Dinámica Evolutiva", level: "Avanzado", question: "¿Cómo describe exactamente el video a la naturaleza de la biodiversidad a través de las eras y el tiempo?", options: [ { text: "A) Como un sistema biológico estático e inalterable desde los inicios de la creación del planeta.", isCorrect: false, feedback: "La historia demuestra que la vida en el planeta nunca ha sido estática, cambia y se transforma constantemente ante las presiones." }, { text: "B) Como un sistema vivo sumamente dinámico y que se encuentra en evolución biológica constante.", isCorrect: true, feedback: "Es un proceso completamente dinámico y vivo, es el maravilloso fruto de millones de años de cambios morfológicos y adaptaciones en cada organismo." }, { text: "C) Como una estructura que solo logra cambiar cuando el ser humano interviene genéticamente en ella.", isCorrect: false, feedback: "La naturaleza y las especies evolucionaban de manera exitosa muchísimo tiempo antes de que siquiera existiera el ser humano." }, { text: "D) Como un proceso matemático que evoluciona de manera exacta y predecible cada millón de años.", isCorrect: false, feedback: "La evolución biológica no sigue un cronómetro exacto ni predecible, depende fuertemente de las presiones ambientales y mutaciones al azar." } ] },
-        
-        { topic: "Beneficios Humanos", level: "Básico", question: "Además de proveer alimento vital y oxígeno, ¿qué otro bien directo e importante nos brinda la biodiversidad de las especies?", options: [ { text: "A) La radiación solar necesaria para calentar nuestra atmósfera.", isCorrect: false, feedback: "El sol es el astro que provee la radiación necesaria, no es un bien otorgado por la biodiversidad terrestre." }, { text: "B) La poderosa gravedad que ayuda a mantener los océanos en su lugar.", isCorrect: false, feedback: "La fuerza de gravedad es un fenómeno enteramente físico del planeta, completamente independiente de los seres vivos que lo habitan." }, { text: "C) Innumerables materias primas y el origen orgánico de algunos medicamentos.", isCorrect: true, feedback: "Gran parte de la medicina actual proviene directamente de aislar compuestos químicos hallados en el interior de diversas plantas y microorganismos." }, { text: "D) La rápida formación de nuevas rocas sólidas dentro de la corteza terrestre.", isCorrect: false, feedback: "Esto corresponde primariamente a procesos geológicos lentos, no está relacionado directamente a las especies (salvo casos aislados como las rocas calcáreas)." } ] },
-        
-        { topic: "Pérdida de Vida", level: "Intermedio", question: "¿Cuál es la causa principal y más destructiva responsable de la pérdida de biodiversidad mencionada hacia el final del video?", options: [ { text: "A) La intensa caza furtiva y comercialización de exóticos animales silvestres.", isCorrect: false, feedback: "Es sin duda una amenaza grave para ciertas especies, pero la alteración directa de su hogar físico (el hábitat) tiene un impacto destructivo mucho mayor." }, { text: "B) La contaminación lumínica y acústica extrema generada en las grandes ciudades.", isCorrect: false, feedback: "Afecta los patrones de comportamiento de ciertas especies locales urbanas, pero no es considerada la causa principal de muerte biológica a nivel global." }, { text: "C) La constante pérdida y el deterioro masivo de los hábitats al transformar ecosistemas.", isCorrect: true, feedback: "Al transformar fuertemente los ecosistemas vírgenes (deforestación agresiva, urbanización descontrolada), destruimos la base esencial de la vida silvestre." }, { text: "D) El aumento térmico exclusivo y localizado de la temperatura en el polo ártico norte.", isCorrect: false, feedback: "El cambio climático indudablemente afecta todo, pero la destrucción física y directa del hábitat encabeza de lejos la lista de las causas inmediatas de muerte." } ] },
-        
-        { topic: "Acción Humana", level: "Avanzado", question: "¿Qué característica de supervivencia tan singular distingue marcadamente al ser humano frente a los demás animales respecto a su entorno?", options: [ { text: "A) Es biológicamente el único animal con la capacidad de adaptarse pasivamente a cualquier tipo de clima.", isCorrect: false, feedback: "De hecho, usamos ropa de abrigo, fuego y tecnología moderna precisamente porque nuestros cuerpos no se adaptan pasivamente a climas extremos." }, { text: "B) Es el único que adapta el entorno drásticamente a él, en lugar de adaptarse él al duro entorno natural.", isCorrect: true, feedback: "Transformamos ecosistemas enteros para nuestra propia comodidad humana en vez de adaptarnos a convivir con ellos en su estado natural." }, { text: "C) Es la única especie superior que no depende en lo absoluto del correcto funcionamiento de la naturaleza.", isCorrect: false, feedback: "El video enfatiza repetidamente que somos una especie frágil y dependemos profundamente de ella para conseguir alimento, medicinas, agua y aire." }, { text: "D) Es el único ser vivo comprobado científicamente que carece de variabilidad genética en su código de ADN.", isCorrect: false, feedback: "Todos los seres humanos tenemos ADN diferente gracias al entrecruzamiento de genes; por ende, somos genéticamente diversos dentro de la especie." } ] },
-        
-        { topic: "Reflexión", level: "Intermedio", question: "Según expone el autor del video, si pretendemos administrar correctamente el planeta Tierra, ¿qué es imperativo comprender sobre nuestras acciones diarias?", options: [ { text: "A) Que la avanzada tecnología humana siempre será capaz de limpiar cualquier contaminación producida.", isCorrect: false, feedback: "La realidad es que la tecnología moderna no posee la capacidad de revivir ecosistemas completos o traer de vuelta a especies ya extintas." }, { text: "B) Que estas acciones solo afectan negativamente y de manera aislada a los países del tercer mundo.", isCorrect: false, feedback: "La agresiva pérdida de biodiversidad altera los ciclos climáticos y las redes ecológicas a nivel global, afectando tanto a países ricos como pobres." }, { text: "C) Que sus devastadoras consecuencias van mucho más allá y nos superan a nosotros mismos como especie.", isCorrect: true, feedback: "Debemos ser capaces de ver más allá de la avaricia inmediata y entender profundamente el daño sistémico global que generamos a todas las especies." }, { text: "D) Que la madre naturaleza está incondicionalmente obligada a proveernos biológicamente de recursos infinitos.", isCorrect: false, feedback: "Los recursos brindados por la biosfera son finitos, limitados y pueden agotarse irremediablemente si el ecosistema sufre un colapso total." } ] },
-        
-        { topic: "Conclusión", level: "Avanzado", question: "¿Qué poderosa y profunda analogía utiliza el autor para cerrar la reflexión final sobre nuestro duro impacto en la naturaleza?", options: [ { text: "A) 'La dramática extinción es simplemente el precio inevitable a pagar por el imparable avance tecnológico moderno.'", isCorrect: false, feedback: "El mensaje central del video no busca justificar la destrucción escudándose en el progreso, sino que aboga seriamente por la conservación y el respeto." }, { text: "B) 'Lo que estamos haciendo cruelmente a los bosques es un espejo exacto de lo que nos hacemos a nosotros mismos.'", isCorrect: true, feedback: "Al dañar la biósfera general de la cual dependemos biológicamente para sobrevivir, en última instancia, y sin darnos cuenta, nos estamos haciendo daño a nosotros mismos." }, { text: "C) 'El ser humano es por derecho el rey absoluto y legítimo propietario de cada ser viviente en todo el planeta Tierra.'", isCorrect: false, feedback: "Se menciona explícitamente que respetar es una ley no escrita que es esencial aplicar en la naturaleza, no se trata de una relación de dominación absoluta." }, { text: "D) 'Pronto mudaremos sin problema alguno toda nuestra civilización humana hacia otros planetas intactos de la galaxia.'", isCorrect: false, feedback: "Ese tipo de pensamiento escapista no forma parte en lo absoluto del poderoso mensaje de conservación ambiental central expuesto en la obra." } ] }
-    ];
+            const startExercise = (index) => {
+                SoundEngine.click();
+                setExIndex(index);
+                setStepIndex(0);
+                setCurrentExScore(100); 
+                setCollectedData(ExercisesDB[index].initialData);
+                setBoardState('init');
+                setFeedback(null);
+                setScreen('PLAY');
+                setRobotMood('idle');
+                if (simRef.current) {
+                    simRef.current.setMode('center');
+                    simRef.current.setSimState({ nodes: 80, connectDist: 18, colorAlert: false }); // Default start state
+                }
+            };
 
-    let currentQIndex = 0;
-    let score = 0;
-    let hits = 0;
-    let streak = 0;
-    let maxStreak = 0;
-    let timeRemaining = 20;
-    let timerInterval;
-    let shuffledQuestions = [];
+            const handleOptionClick = (isCorrect) => {
+                SoundEngine.click();
+                if (boardState === 'final' || feedback) return; 
+                
+                if (isCorrect) {
+                    SoundEngine.correct();
+                    setRobotMood('happy');
+                    setFeedback({ correct: true, msg: currentStep.fb_c });
+                    setBoardState('final'); 
+                    
+                    if (currentStep.updateSim && simRef.current) {
+                        simRef.current.setSimState(currentStep.updateSim);
+                    }
+                    if (currentStep.updateData) {
+                        setCollectedData(prev => ({...prev, ...currentStep.updateData}));
+                    }
+                } else {
+                    SoundEngine.wrong();
+                    setRobotMood('sad');
+                    setCurrentExScore(prev => Math.max(0, prev - 20)); 
+                    setFeedback({ correct: false, msg: currentStep.fb_w });
+                }
+            };
 
-    function startTimer() {
-        timeRemaining = 20;
-        const timerBar = document.getElementById('timer-bar');
-        timerBar.style.width = '100%';
-        timerBar.className = 'h-full bg-green-400 w-full transition-all duration-1000 ease-linear shadow-[0_0_10px_rgba(16,185,129,0.8)]';
-        
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            timeRemaining--;
-            let pct = (timeRemaining / 20) * 100;
-            timerBar.style.width = pct + '%';
-            
-            if(timeRemaining <= 5 && timeRemaining > 0) {
-                timerBar.classList.replace('bg-green-400', 'bg-red-500');
-                timerBar.classList.replace('shadow-[0_0_10px_rgba(16,185,129,0.8)]', 'shadow-[0_0_10px_rgba(239,68,68,0.8)]');
-                timerBar.parentElement.classList.add('animate-pulse');
-                SoundEngine.playTick(); 
-            }
-            if(timeRemaining <= 0) {
-                clearInterval(timerInterval);
-                timerBar.parentElement.classList.remove('animate-pulse');
-            }
-        }, 1000);
-    }
-    
-    function stopTimer() {
-        clearInterval(timerInterval);
-        document.getElementById('timer-bar').parentElement.classList.remove('animate-pulse');
-    }
+            const handleNext = () => {
+                SoundEngine.click();
+                setFeedback(null);
+                setRobotMood('idle');
+                
+                if (currentStep.isFinal) {
+                    SoundEngine.success();
+                    setScore(prev => prev + currentExScore);
+                    
+                    if (exIndex === highestUnlockedEx) {
+                        setHighestUnlockedEx(prev => prev + 1);
+                    }
+                    
+                    if (exIndex + 1 < ExercisesDB.length) {
+                        setExIndex(prev => prev + 1); 
+                        goToMap();
+                    } else {
+                        setScreen('END');
+                    }
+                } else {
+                    setStepIndex(prev => prev + 1);
+                    setBoardState('init');
+                }
+            };
 
-    function applyTiltEffect(element) {
-        element.addEventListener('mousemove', (e) => {
-            const rect = element.getBoundingClientRect();
-            const x = e.clientX - rect.left; 
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-            
-            const rotateX = ((y - centerY) / centerY) * -10; 
-            const rotateY = ((x - centerX) / centerX) * 10;
-            
-            element.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02, 1.02, 1.02)`;
-        });
-        element.addEventListener('mouseleave', () => {
-            element.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)`;
-        });
-    }
+            const renderMap = () => (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center p-8 bg-[#020b06]/85 backdrop-blur-md">
+                    <div className="bg-[#03150d]/90 border-2 border-emerald-500/30 p-16 max-w-6xl w-full rounded-[3rem] shadow-[0_0_60px_rgba(0,0,0,0.8)] flex flex-col items-center text-center relative overflow-hidden">
+                        <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+                        <h2 className="text-4xl font-black text-white mb-20 tracking-[0.3em] uppercase relative z-10">Ruta de Conservación</h2>
+                        
+                        <div className="flex justify-between items-center w-full relative mb-24 px-12 z-10">
+                            <div className="absolute left-20 right-20 top-1/2 h-3 bg-emerald-900/40 -z-10 -translate-y-1/2 rounded-full"></div>
+                            {ExercisesDB.map((ex, i) => {
+                                const isDone = i < highestUnlockedEx;
+                                const isActive = i === exIndex;
+                                const isLocked = i > highestUnlockedEx;
 
-    async function startQuiz() {
-        SoundEngine.playClick();
-        await SoundEngine.init(); 
-        
-        document.getElementById('screen-intro').classList.remove('active');
-        
-        setTimeout(() => {
-            document.getElementById('screen-intro').style.display = 'none';
-            const quizScreen = document.getElementById('screen-quiz');
-            quizScreen.style.display = 'flex';
-            void quizScreen.offsetWidth;
-            quizScreen.classList.add('active');
-            
-            // Randomizar (Límite a 20 preguntas)
-            shuffledQuestions = questionsDB.sort(() => 0.5 - Math.random()).map(q => ({
-                ...q, options: q.options.sort(() => 0.5 - Math.random())
-            }));
-            
-            evoBot.say("Sistemas ecológicos en línea. Recuerda: +10 puntos por cada acierto biológico. ¡Protege el bioma!", 'normal');
-            loadQuestion();
-        }, 500); 
-    }
-
-    function loadQuestion() {
-        const q = shuffledQuestions[currentQIndex];
-        
-        document.getElementById('stat-question').textContent = `${currentQIndex + 1}/20`;
-        document.getElementById('progress-bar').style.width = `${(currentQIndex / 20) * 100}%`;
-        
-        document.getElementById('topic-text').innerHTML = `${q.topic} <span class="ml-2 px-2 py-0.5 bg-slate-800 text-[10px] rounded border border-slate-600">${q.level}</span>`;
-        
-        const qText = document.getElementById('question-text');
-        scrambleText(qText, q.question, 1000); 
-        
-        const optCont = document.getElementById('options-container');
-        optCont.innerHTML = '';
-        
-        q.options.forEach((opt, index) => {
-            let cleanText = opt.text.replace(/^[A-D]\) /, '');
-            let letter = String.fromCharCode(65 + index);
-            
-            const btn = document.createElement('div');
-            btn.className = `option-card p-5 rounded-2xl flex items-center gap-4 opacity-0 transform translate-y-8`;
-            btn.style.transition = `background 0.3s, border-color 0.3s, box-shadow 0.3s, opacity 0.4s ease ${index * 0.15}s, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${index * 0.15}s`;
-            
-            btn.innerHTML = `
-                <div class="option-content flex items-center gap-4 w-full pointer-events-none">
-                    <div class="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-500 flex items-center justify-center font-sci font-bold text-2xl text-green-400 shrink-0 shadow-inner group-hover:bg-green-400 group-hover:text-slate-900 transition-colors">
-                        ${letter}
+                                let nodeClass = "w-24 h-24 rounded-full flex items-center justify-center font-black text-3xl border-4 transition-all duration-500 ";
+                                if (isActive) nodeClass += "bg-[#03150d] border-emerald-400 text-emerald-400 scale-125 shadow-[0_0_40px_rgba(16,185,129,0.9)] cursor-pointer";
+                                else if (isDone) nodeClass += "bg-emerald-500 border-emerald-400 text-black shadow-[0_0_30px_rgba(16,185,129,0.5)] cursor-pointer hover:bg-emerald-400";
+                                else nodeClass += "bg-[#062417] border-emerald-900/60 text-emerald-800/50 cursor-not-allowed opacity-60";
+                                
+                                return <div key={i} onClick={() => !isLocked && setExIndex(i)} onMouseEnter={() => SoundEngine.hover()} className={nodeClass}>{i+1}</div>;
+                            })}
+                        </div>
+                        
+                        <div className="bg-[#051c11] border border-emerald-500/40 p-12 rounded-3xl w-full mb-12 shadow-inner relative z-10">
+                            <h3 className="text-5xl font-black text-emerald-400 mb-6 uppercase">{ExercisesDB[exIndex]?.title}</h3>
+                            <p className="text-white text-2xl font-normal">Estación {exIndex + 1} de {ExercisesDB.length} disponible para escaneo.</p>
+                        </div>
+                        
+                        <button onClick={() => startExercise(exIndex)} onMouseEnter={() => SoundEngine.hover()} className="py-6 px-14 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-3xl rounded-full shadow-[0_0_50px_rgba(16,185,129,0.5)] active:scale-95 transition-all uppercase tracking-widest relative z-10">
+                            {exIndex < highestUnlockedEx ? 'REPETIR ANÁLISIS' : 'INICIAR ANÁLISIS'}
+                        </button>
                     </div>
-                    <p class="text-[17px] text-gray-200 font-inter leading-tight">${cleanText}</p>
                 </div>
-            `;
-            
-            applyTiltEffect(btn);
-            btn.onmouseenter = () => SoundEngine.playHover();
-            btn.onclick = (e) => selectOption(btn, opt, cleanText, e);
-            optCont.appendChild(btn);
-            
-            setTimeout(() => {
-                btn.classList.remove('opacity-0', 'translate-y-8');
-                setTimeout(()=> { btn.style.transition = `background 0.3s, border-color 0.3s, box-shadow 0.3s, transform 0.1s`; }, 400);
-            }, 50);
-        });
+            );
 
-        startTimer();
-    }
+            const renderPlay = () => (
+                <main className="flex-1 p-8 flex flex-col md:flex-row gap-10 relative z-10 w-full h-full max-w-[1920px] mx-auto pt-32">
+                    
+                    {/* PANEL IZQUIERDO */}
+                    <div className="w-full md:w-5/12 flex flex-col gap-8 h-full z-20">
+                        <div className="bg-[#03150d]/90 border border-emerald-900/50 p-10 rounded-[2.5rem] shadow-xl backdrop-blur-sm">
+                            <div className="flex justify-between items-center mb-8 pb-6 border-b border-emerald-900/50">
+                                <span className="font-black text-emerald-400 text-2xl tracking-widest uppercase">{currentEx.title}</span>
+                                <span className="text-sm bg-[#051f14] border border-emerald-500/50 text-emerald-300 font-bold px-5 py-2 rounded-full uppercase">Paso {stepIndex + 1}/{currentEx.steps.length}</span>
+                            </div>
+                            <p className="text-2xl text-slate-100 leading-relaxed font-normal" dangerouslySetInnerHTML={{__html: currentEx.story}}></p>
+                        </div>
+                        
+                        <div className="bg-[#03150d]/90 border border-emerald-900/50 p-10 rounded-[2.5rem] flex-1 flex flex-col shadow-xl backdrop-blur-sm">
+                            <div className="flex justify-between items-center mb-8 pb-4 border-b border-emerald-900/50">
+                                <h3 className="text-xl font-black text-emerald-600 tracking-[0.2em] uppercase">Datos Ecológicos</h3>
+                                <span className="text-sm font-bold text-yellow-400">Puntaje Posible: {currentExScore}</span>
+                            </div>
+                            <div className="space-y-4 overflow-y-auto pr-4 custom-scrollbar">
+                                {Object.entries(collectedData).map(([k, v], idx) => {
+                                    const isUnknown = String(v).includes('?');
+                                    return (
+                                        <div key={idx} className="flex justify-between items-center bg-[#051c11] border border-emerald-900/40 px-6 py-4 rounded-2xl hover:border-emerald-500/40 transition-colors">
+                                            <span className="text-slate-300 font-normal text-lg uppercase tracking-wide">{k}</span>
+                                            <span className={`font-mono font-bold text-2xl ${isUnknown ? 'unknown-pulse' : 'text-emerald-400'}`}>{v}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
 
-    function selectOption(btnElement, optData, cleanText, event) {
-        SoundEngine.playClick();
-        stopTimer();
-        
-        const allOpts = document.getElementById('options-container').children;
-        for(let opt of allOpts) opt.classList.add('disabled');
+                    {/* PANEL DERECHO */}
+                    <div className="w-full md:w-7/12 flex flex-col gap-8 h-full z-20">
+                        {/* PIZARRA */}
+                        <div className="bg-[#03150d]/95 border-2 border-emerald-500/30 p-12 rounded-[3rem] flex flex-col items-center justify-center relative min-h-[40vh] shadow-[0_0_50px_rgba(0,0,0,0.6)] backdrop-blur-md">
+                            <span className="absolute top-8 left-10 text-sm font-black tracking-[0.25em] text-emerald-500/60 uppercase">{currentStep.boardTag}</span>
+                            <div className="text-4xl md:text-5xl font-mono text-white flex items-center justify-center font-normal tracking-wide text-center" 
+                                dangerouslySetInnerHTML={{__html: boardState === 'init' ? currentStep.boardInit : currentStep.boardFinal}}>
+                            </div>
+                        </div>
 
-        if(optData.isCorrect) {
-            btnElement.classList.remove('disabled');
-            btnElement.classList.add('selected-correct');
-            
-            score += 10;
-            hits++;
-            streak++;
-            if(streak > maxStreak) maxStreak = streak;
-            
-            const streakCounter = document.getElementById('streak-counter');
-            streakCounter.textContent = `RACHA: x${streak}`;
-            if(streak >= 3) {
-                streakCounter.classList.add('streak-active');
-                SoundEngine.playCombo();
-                fireConfetti(true);
-                evoBot.say(`¡COMBO x${streak}! Tu entendimiento de los ecosistemas es asombroso.`, 'combo', 3000);
-            } else {
-                SoundEngine.playCorrect();
-                fireConfetti();
-            }
-            
-            document.getElementById('feedback-points').innerHTML = `<span class="text-green-400 font-bold">+10 Puntos</span>`;
-            setupModal(true, cleanText, optData.feedback);
-            
-        } else {
-            btnElement.classList.remove('disabled');
-            btnElement.classList.add('selected-incorrect');
-            streak = 0;
-            document.getElementById('streak-counter').textContent = `RACHA: x0`;
-            document.getElementById('streak-counter').classList.remove('streak-active');
-            
-            SoundEngine.playIncorrect();
-            document.getElementById('feedback-points').innerHTML = `<span class="text-red-400 font-bold">0 Puntos</span>`;
-            setupModal(false, cleanText, optData.feedback);
-            
-            if(Math.random() > 0.4) evoBot.say("Análisis incorrecto. Revisa la explicación biológica para tu próximo intento.", 'error', 5000);
+                        {/* INTERACTIVIDAD */}
+                        <div className="bg-[#03150d]/90 border border-emerald-900/50 p-10 rounded-[3rem] flex-1 flex flex-col justify-center relative shadow-xl backdrop-blur-sm">
+                            <h4 className="text-3xl font-bold mb-10 text-center text-white leading-snug">{currentStep.q}</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-4">
+                                {shuffledOptions.map((optObj, idx) => (
+                                    <button key={idx} onClick={() => handleOptionClick(optObj.isCorrect)} onMouseEnter={() => SoundEngine.hover()} disabled={boardState === 'final' || feedback} 
+                                        className="bg-[#061e14] hover:bg-[#0a2e1f] border-2 border-emerald-900/60 hover:border-emerald-400 p-5 rounded-3xl text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-md flex items-center gap-4 group">
+                                        <span className="w-12 h-12 rounded-xl bg-[#03150d] border border-emerald-800/50 group-hover:border-emerald-400 group-hover:text-emerald-400 text-slate-300 font-black text-xl flex items-center justify-center shrink-0 transition-colors">{['A', 'B', 'C', 'D'][idx]}</span>
+                                        <span className="text-xl font-medium text-slate-200 group-hover:text-white leading-snug">{optObj.text}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* MODAL FEEDBACK */}
+                    {feedback && (
+                        <div className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-8 rounded-[3rem] pointer-events-auto">
+                            <div className={`bg-[#051c11] border-4 ${feedback.correct ? 'border-emerald-400' : 'border-red-500'} rounded-[3rem] shadow-2xl max-w-xl w-full p-12 flex flex-col items-center text-center`}>
+                                <div className="w-32 h-32 mb-8"><ProfeBot color={COLORS.emerald} mood={robotMood} /></div>
+                                <h3 className={`text-4xl font-black mb-6 uppercase tracking-wide ${feedback.correct ? 'text-emerald-400' : 'text-red-400'}`}>
+                                    {feedback.correct ? '¡Análisis Correcto!' : 'Análisis Erróneo'}
+                                </h3>
+                                <p className="text-2xl text-white font-normal mb-10 leading-relaxed">{feedback.msg}</p>
+                                
+                                {feedback.correct ? (
+                                    <button onClick={handleNext} onMouseEnter={() => SoundEngine.hover()} className="w-full py-6 px-8 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-2xl rounded-2xl active:scale-95 transition-all uppercase tracking-wider shadow-[0_0_30px_rgba(16,185,129,0.4)]">
+                                        {currentStep.isFinal ? 'Completar Módulo' : 'Siguiente Métrica →'}
+                                    </button>
+                                ) : (
+                                    <button onClick={() => {setFeedback(null); setRobotMood('idle'); SoundEngine.click();}} onMouseEnter={() => SoundEngine.hover()} className="w-full py-5 px-8 bg-transparent border-4 border-red-500 text-red-400 hover:bg-red-500/10 font-black text-xl rounded-2xl active:scale-95 transition-all uppercase tracking-wider">
+                                        Reevaluar Datos
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </main>
+            );
+
+            return (
+                <div className="w-full h-screen bg-[#020b06] text-white flex flex-col overflow-hidden relative font-sans">
+                    <BioSimulation3D simRef={simRef} />
+                    <div className="perspective-grid" />
+                    <div className="ambient-glow" />
+
+                    {(screen !== 'START' && screen !== 'END') && (
+                        <header className="absolute top-0 w-full h-28 bg-[#020e08]/80 backdrop-blur-xl border-b border-emerald-900/50 px-10 flex items-center justify-between z-40 shadow-lg">
+                            <div className="flex flex-col">
+                                <h1 className="text-3xl font-black tracking-wider leading-none">
+                                    <span className="text-white">TUPROFE20</span> <span className="text-emerald-400">LAB</span>
+                                </h1>
+                                <span className="text-[12px] font-bold tracking-[0.3em] text-slate-400 mt-2 uppercase">BIODIVERSIDAD Y CONSERVACIÓN</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-8">
+                                <div className="bg-[#051c11] border border-emerald-900/60 px-8 py-3 rounded-2xl flex items-center gap-5 shadow-inner">
+                                    <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Score Vital</span>
+                                    <span className="text-3xl font-black text-yellow-400 drop-shadow-md">{score}</span>
+                                </div>
+                                <button onClick={toggleMute} onMouseEnter={() => SoundEngine.hover()} className="w-14 h-14 bg-[#051c11] hover:bg-[#0a2e1f] border border-emerald-900/60 rounded-2xl flex items-center justify-center transition-all">
+                                    {isMuted ? <SpeakerXIcon /> : <SpeakerIcon />}
+                                </button>
+                                {screen === 'PLAY' && (
+                                    <button onClick={goToMap} onMouseEnter={() => SoundEngine.hover()} className="px-6 py-4 bg-[#051c11] hover:bg-[#0a2e1f] border border-emerald-900/60 text-emerald-100 font-bold text-lg rounded-2xl uppercase tracking-wider transition-all shadow-md">
+                                        Ruta Principal
+                                    </button>
+                                )}
+                            </div>
+                        </header>
+                    )}
+
+                    {screen === 'START' && (
+                        <div className="absolute inset-0 z-50 flex items-center justify-center p-6 overflow-hidden">
+                            <BioParticlesBackground />
+                            <div className="max-w-4xl w-full bg-[#03150d]/95 border border-emerald-500/30 rounded-[3rem] p-16 flex flex-col items-center text-center shadow-[0_0_80px_rgba(16,185,129,0.15)] backdrop-blur-2xl relative z-10">
+                                <span className="text-sm font-black tracking-[0.35em] text-emerald-400 uppercase mb-4">TUPROFE20 LAB • CCNN 5° AÑO</span>
+                                <h1 className="text-5xl sm:text-7xl font-black tracking-wider text-white uppercase drop-shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-2">
+                                    LABORATORIO DE
+                                </h1>
+                                <h2 className="text-5xl sm:text-7xl font-black uppercase mb-12 bg-gradient-to-r from-emerald-400 via-teal-300 to-green-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                                    BIODIVERSIDAD Y CONSERVACIÓN
+                                </h2>
+                                <div className="w-48 h-48 mb-12"><ProfeBot color={COLORS.emerald} mood="happy" /></div>
+                                <button onClick={() => { SoundEngine.click(); setScreen('MAP'); }} onMouseEnter={() => SoundEngine.hover()} className="w-full max-w-md py-6 px-10 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-black font-black text-2xl rounded-full shadow-[0_0_40px_rgba(16,185,129,0.4)] active:scale-95 transition-all uppercase tracking-widest">
+                                    ENTRAR AL SISTEMA
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    
+                    {screen === 'MAP' && renderMap()}
+                    {screen === 'PLAY' && renderPlay()}
+                    
+                    {screen === 'END' && (
+                        <div className="absolute inset-0 z-50 flex flex-col justify-center items-center p-10 bg-[#020b06]/95 backdrop-blur-xl">
+                            <div className="max-w-5xl w-full bg-[#03150d] border-2 border-emerald-400 rounded-[3rem] shadow-[0_0_90px_rgba(16,185,129,0.3)] p-20 flex flex-col items-center text-center relative overflow-hidden">
+                                <div className="absolute -top-40 -left-40 w-96 h-96 bg-emerald-500/20 blur-[100px] rounded-full pointer-events-none"></div>
+                                <h2 className="text-6xl font-black text-white tracking-tight uppercase mb-12 relative z-10">MÓDULOS DE CONSERVACIÓN COMPLETADOS</h2>
+                                <div className="w-56 h-56 mb-12 relative z-10"><ProfeBot color={COLORS.emerald} mood="celebrate" /></div>
+                                <div className="bg-[#051c11] border border-emerald-900/60 w-full p-12 rounded-3xl mb-16 shadow-inner relative z-10">
+                                    <h3 className="text-2xl text-slate-400 uppercase tracking-widest font-bold mb-6">Eficiencia de Análisis Final</h3>
+                                    <div className="text-9xl font-mono font-black text-yellow-400 drop-shadow-[0_0_30px_rgba(250,204,21,0.5)]">{score}</div>
+                                </div>
+                                <button onClick={() => window.location.reload()} onMouseEnter={() => SoundEngine.hover()} className="py-6 px-14 bg-gradient-to-r from-emerald-500 to-teal-500 text-black font-black text-2xl rounded-2xl shadow-[0_0_35px_rgba(16,185,129,0.4)] transition-all active:scale-95 uppercase tracking-wider relative z-10">
+                                    Reiniciar Sistema
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
         }
 
-        document.getElementById('stat-score').textContent = score;
-    }
-
-    function setupModal(isCorrect, selectedText, explanation) {
-        const modal = document.getElementById('feedback-modal');
-        const panel = document.getElementById('feedback-panel');
-        const glow = document.getElementById('modal-glow');
-        
-        document.getElementById('feedback-selected').textContent = selectedText;
-        document.getElementById('feedback-explanation').innerHTML = explanation;
-        
-        if(isCorrect) {
-            document.getElementById('feedback-icon').innerHTML = '<i class="fas fa-check-circle text-green-400 drop-shadow-[0_0_20px_rgba(74,222,128,0.8)]"></i>';
-            document.getElementById('feedback-title').textContent = 'ANÁLISIS CONFIRMADO';
-            document.getElementById('feedback-title').className = 'text-3xl font-sci font-bold text-green-400';
-            panel.style.borderTopColor = '#4ade80';
-            glow.style.backgroundColor = 'rgba(74, 222, 128, 0.15)';
-        } else {
-            document.getElementById('feedback-icon').innerHTML = '<i class="fas fa-times-circle text-red-500 drop-shadow-[0_0_20px_rgba(239,68,68,0.8)]"></i>';
-            document.getElementById('feedback-title').textContent = 'ERROR ECOLÓGICO';
-            document.getElementById('feedback-title').className = 'text-3xl font-sci font-bold text-red-500';
-            panel.style.borderTopColor = '#ef4444';
-            glow.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
-        }
-        
-        setTimeout(() => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => { panel.classList.remove('translate-y-12', 'opacity-0'); }, 10);
-        }, 800);
-    }
-
-    function nextQuestion() {
-        SoundEngine.playClick();
-        const panel = document.getElementById('feedback-panel');
-        panel.classList.add('translate-y-12', 'opacity-0');
-        
-        setTimeout(() => {
-            document.getElementById('feedback-modal').classList.add('hidden');
-            document.getElementById('feedback-modal').classList.remove('flex');
-            
-            currentQIndex++;
-            if(currentQIndex < 20) loadQuestion();
-            else showResults();
-        }, 400); 
-    }
-
-    function showResults() {
-        const quizScreen = document.getElementById('screen-quiz');
-        quizScreen.classList.remove('active');
-        
-        setTimeout(() => {
-            quizScreen.style.display = 'none';
-            const resScreen = document.getElementById('screen-results');
-            resScreen.style.display = 'flex';
-            void resScreen.offsetWidth;
-            resScreen.classList.add('active');
-
-            if (score >= 100) {
-                SoundEngine.playCombo();
-                fireConfetti(true);
-                setTimeout(()=>fireConfetti(true), 1200); 
-            }
-
-            animateValue("final-score", 0, score, 1500, "/200"); 
-            animateValue("final-hits", 0, hits, 1500, "/20");
-            document.getElementById('final-streak').textContent = `x${maxStreak}`;
-
-            const rankEl = document.getElementById('final-rank');
-            // Escala de 20 preguntas (200 puntos totales)
-            if(score >= 180) { 
-                rankEl.innerHTML = "Rango: <span class='text-emerald-400'>Guardián de la Biósfera 🌍</span>"; 
-                rankEl.style.borderColor = "var(--neon-green)";
-                evoBot.say("¡Absolutamente brillante! Comprendes a la perfección la importancia de preservar nuestro planeta.", "correct");
-            } else if(score >= 120) { 
-                rankEl.innerHTML = "Rango: <span class='text-cyan-400'>Ecólogo Experto 🔬</span>"; 
-                rankEl.style.borderColor = "var(--neon-cyan)";
-                evoBot.say("Gran análisis genético, tienes un enorme potencial como investigador de los ecosistemas.", "correct");
-            } else if (score >= 60) {
-                rankEl.innerHTML = "Rango: <span class='text-green-400'>Explorador Naturalista 🌿</span>"; 
-                rankEl.style.borderColor = "var(--neon-green)";
-                evoBot.say("Buen avance ecológico, pero las interacciones biológicas aún requieren un poco más de repaso.", "normal");
-            } else { 
-                rankEl.innerHTML = "Rango: <span class='text-red-500'>Ecosistema en Riesgo ⚠️</span>"; 
-                rankEl.style.borderColor = "#ef4444";
-                evoBot.say("Daño detectado en la red trófica. Se requiere un estudio profundo de las bases biológicas.", "error");
-            }
-        }, 500);
-    }
-
-    function animateValue(id, start, end, duration, suffix = "") {
-        if (start === end) { document.getElementById(id).innerHTML = end + `<span class="text-xl text-gray-500">${suffix}</span>`; return; }
-        let current = start;
-        let increment = end > start ? (end > 50 ? 5 : 1) : -1;
-        let stepTime = Math.abs(Math.floor(duration / ((end - start)/increment)));
-        let obj = document.getElementById(id);
-        
-        let timer = setInterval(() => {
-            current += increment;
-            if (current >= end) {
-                current = end;
-                clearInterval(timer);
-            }
-            obj.innerHTML = current + `<span class="text-xl text-gray-500">${suffix}</span>`;
-        }, stepTime);
-    }
-</script>
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
